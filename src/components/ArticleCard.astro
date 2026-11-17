@@ -1,0 +1,75 @@
+---
+import Icon from './Icon';
+import { url } from '../lib/url';
+import { dateLabel, readingTime } from '../lib/articles';
+import { categories } from '../data/knowledge';
+const { article, index = 0, featured = false } = Astro.props;
+const c = categories.find((c) => c.id === article.data.category)!;
+---
+
+<a class:list={['article-card', { featured }]} href={url(`articles/${article.id}/`)}>
+  <div class:list={['article-art', `art-${article.data.category}`]} aria-hidden="true">
+    <span class="art-label">
+      {article.data.kind === 'Writeup' ? 'WRITEUP' : 'FIELD NOTES'} /{' '}
+      {String(index + 1).padStart(2, '0')}
+    </span>
+    {article.data.category === 'pwn' ? (
+      <div class="stack-art">
+        <span>0x7fffffff e030</span>
+        <i>return address</i>
+        <i>saved rbp</i>
+        <i>buffer [32]</i>
+        <b>↳ {article.id === 'rop-basics' ? 'pop rdi; ret' : 'stack → control flow'}</b>
+      </div>
+    ) : article.data.category === 'web' ? (
+      <div class="code-art">
+        <span>
+          SELECT <b>knowledge</b>
+        </span>
+        <span>
+          FROM <b>curiosity</b>
+        </span>
+        <span>
+          WHERE <em>trust = ?</em>
+        </span>
+        <i>parameterized. protected.</i>
+      </div>
+    ) : (
+      <div class="code-art">
+        <span>
+          <em>$</em> info registers
+        </span>
+        <span>
+          rsp <b>0x7fffffff</b>
+        </span>
+        <span>
+          rip <b>0x00401020</b>
+        </span>
+        <i>observe → understand</i>
+      </div>
+    )}
+    <span class="art-corner">
+      {c.name} <Icon name="arrow" size={16} />
+    </span>
+  </div>
+  <div class="article-card-body">
+    <div class="article-meta">
+      <span style={`color:${c.color}`}>{c.name}</span>
+      <span>{dateLabel(article.data.date)}</span>
+      <span class="example-tag">示例</span>
+    </div>
+    <h3>{article.data.title}</h3>
+    <p>{article.data.description}</p>
+    <div class="article-bottom">
+      <div>
+        {article.data.tags.slice(0, 2).map((t: string) => (
+          <span>#{t}</span>
+        ))}
+      </div>
+      <span>
+        <Icon name="clock" size={13} />
+        {readingTime(article.body)} min read
+      </span>
+    </div>
+  </div>
+</a>

@@ -1,0 +1,33 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon';
+import { categories, knowledge } from '../../data/knowledge';
+import { getArticles } from '../../lib/articles';
+import { url } from '../../lib/url';
+const articles = await getArticles();
+---
+
+<Layout title="技术分类">
+  <header class="page-width page-head">
+    <span class="eyebrow">FIND YOUR DIRECTION</span>
+    <h1>
+      技术版图<span class="accent">.</span>
+    </h1>
+    <p>七个方向，一份互相连接的知识体系。从你最感兴趣的问题出发。</p>
+  </header>
+  <section class="page-width content-section category-cards">
+    {categories.map((c) => (
+      <a class="panel" href={url(`categories/${c.id}/`)}>
+        <span style={`color:${c.color}`}>
+          <Icon name={c.icon} size={30} />
+        </span>
+        <h2>{c.name}</h2>
+        <p>{c.description}</p>
+        <span class="small muted">
+          {articles.filter((a) => a.data.category === c.id).length} 篇文章 ·{' '}
+          {knowledge.filter((k) => k.category === c.id).length} 个知识点 →
+        </span>
+      </a>
+    ))}
+  </section>
+</Layout>

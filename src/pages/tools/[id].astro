@@ -1,0 +1,81 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { tools } from '../../data/tools';
+import { knowledge } from '../../data/knowledge';
+import { getArticles } from '../../lib/articles';
+import { url } from '../../lib/url';
+export function getStaticPaths() {
+  return tools.map((t) => ({ params: { id: t.id }, props: { tool: t } }));
+}
+const { tool } = Astro.props;
+const articles = (await getArticles()).filter((a) =>
+  a.data.knowledge.some((k) => tool.knowledge.includes(k)),
+);
+---
+
+<Layout title={tool.name} description={tool.explanation}>
+  <header class="page-width page-head">
+    <span class="eyebrow">
+      <a href={url('tools/')}>TOOLBOX</a> / {tool.category}
+    </span>
+    <h1>
+      {tool.name}
+      <span class="accent">.</span>
+    </h1>
+    <p>示例工具条目 · 只展示与复制，请在自己的授权环境中理解后使用。</p>
+  </header>
+  <section class="page-width content-section">
+    <article
+      class="panel tool-card"
+      data-pagefind-body
+      data-type="工具"
+      data-category={tool.category}
+      data-pagefind-filter="类型[data-type],分类[data-category]"
+    >
+      <h2 data-pagefind-meta="title">{tool.name}</h2>
+      <p>{tool.explanation}</p>
+      <pre><code id="command-text">{tool.command}</code></pre>
+      <button class="button primary" id="copy-tool">
+        复制命令
+      </button>
+      <div class="tags">
+        {tool.tags.map((t) => (
+          <span>#{t}</span>
+        ))}
+      </div>
+      <h3 style="margin-top:25px">使用示例</h3>
+      <p>{tool.example}</p>
+      <div class:list={['callout', { warning: tool.dangerous }]}>
+        <b>{tool.dangerous ? '⚠ 运行提示' : '注意事项'}</b>
+        <p>{tool.caution}</p>
+      </div>
+      <div class="link-list">
+        {tool.knowledge.map((id) => (
+          <a href={url(`knowledge/${id}/`)}>
+            知识点 · {knowledge.find((k) => k.id === id)?.name} →
+          </a>
+        ))}
+        {articles.map((a) => (
+          <a href={url(`articles/${a.id}/`)}>相关文章 · {a.data.title} →</a>
+        ))}
+        <a href={tool.source} target="_blank" rel="noreferrer">
+          官方文档 ↗
+        </a>
+      </div>
+    </article>
+  </section>
+</Layout>
+<script>
+  document.querySelector('#copy-tool')?.addEventListener('click', async () => {
+    const b = document.querySelector('#copy-tool')!;
+    try {
+      await navigator.clipboard.writeText(
+        document.querySelector('#command-text')?.textContent || '',
+      );
+      b.textContent = '已复制 ✓';
+    } catch {
+      b.textContent = '剪贴板不可用，请手动复制';
+    }
+    setTimeout(() => (b.textContent = '复制命令'), 1800);
+  });
+</script>

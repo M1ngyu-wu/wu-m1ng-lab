@@ -1,0 +1,89 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import { getArticles } from '../lib/articles';
+import { categories } from '../data/knowledge';
+const articles = await getArticles();
+---
+
+<Layout title="文章归档">
+  <header class="page-width page-head">
+    <span class="eyebrow">FIELD NOTES / ARCHIVES</span>
+    <h1>
+      每一次探索，都有迹可循<span class="accent">.</span>
+    </h1>
+    <p>
+      {articles.length} 篇示例文章，从系统基础走向漏洞原理。按方向、标签与时间寻找你想读的内容。
+    </p>
+  </header>
+  <section class="page-width content-section">
+    <div class="toolbar">
+      <input id="article-query" aria-label="搜索归档文章" placeholder="筛选标题、标签与简介…" />
+      <select id="article-category" aria-label="归档分类">
+        <option value="">所有方向</option>
+        {categories.map((c) => (
+          <option value={c.id}>{c.name}</option>
+        ))}
+      </select>
+      <select id="article-kind" aria-label="文章类型">
+        <option value="">所有类型</option>
+        <option value="Note">技术笔记</option>
+        <option value="Writeup">CTF Writeup</option>
+      </select>
+      <select id="article-date" aria-label="发布时间">
+        <option value="">所有月份</option>
+        {[...new Set(articles.map((a) => a.data.date.toISOString().slice(0, 7)))].map((d) => (
+          <option value={d}>{d}</option>
+        ))}
+      </select>
+      <select id="article-tag" aria-label="文章标签">
+        <option value="">所有标签</option>
+        {[...new Set(articles.flatMap((a) => a.data.tags))].map((t) => (
+          <option>{t}</option>
+        ))}
+      </select>
+    </div>
+    <p id="article-count" class="notice" aria-live="polite">
+      {articles.length} 篇文章
+    </p>
+    <div class="article-grid" id="article-results">
+      {articles.map((a, i) => (
+        <div
+          data-article
+          data-category={a.data.category}
+          data-kind={a.data.kind}
+          data-date={a.data.date.toISOString().slice(0, 7)}
+          data-tags={JSON.stringify(a.data.tags)}
+          data-text={`${a.data.title} ${a.data.description} ${a.data.tags.join(' ')}`}
+        >
+          <ArticleCard article={a} index={i} />
+        </div>
+      ))}
+    </div>
+    <div class="empty" id="article-empty" hidden>
+      没有匹配文章，请调整筛选条件。
+    </div>
+  </section>
+</Layout>
+<script>
+  const ids = ['article-query', 'article-category', 'article-kind', 'article-date', 'article-tag'];
+  const filter = () => {
+    const [q, c, k, d, t] = ids.map(
+      (id) => (document.getElementById(id) as HTMLInputElement).value,
+    );
+    let count = 0;
+    document.querySelectorAll<HTMLElement>('[data-article]').forEach((el) => {
+      const show =
+        (!q || el.dataset.text?.toLowerCase().includes(q.toLowerCase())) &&
+        (!c || el.dataset.category === c) &&
+        (!k || el.dataset.kind === k) &&
+        (!d || el.dataset.date === d) &&
+        (!t || JSON.parse(el.dataset.tags || '[]').includes(t));
+      el.hidden = !show;
+      if (show) count++;
+    });
+    document.querySelector('#article-count')!.textContent = `${count} 篇文章`;
+    document.querySelector<HTMLElement>('#article-empty')!.hidden = count > 0;
+  };
+  ids.forEach((id) => document.getElementById(id)?.addEventListener('input', filter));
+</script>

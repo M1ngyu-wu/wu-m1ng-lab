@@ -1,0 +1,17 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PwnLab from '../components/PwnLab';
+---
+
+<Layout title="Pwn Lab" description="浏览器内的栈溢出、ROP、ret2libc 和 Syscall 交互教学实验。">
+  <header class="page-width page-head">
+    <span class="eyebrow">EXPERIMENT / UNDERSTAND / REPEAT</span>
+    <h1>
+      Pwn 可视化实验室<span class="accent">.</span>
+    </h1>
+    <p>让地址、字节和指令的关系变得清晰。所有过程均为浏览器内教学模拟，使用示例数据。</p>
+  </header>
+  <section class="page-width content-section">
+    <PwnLab client:load />
+  </section>
+</Layout>

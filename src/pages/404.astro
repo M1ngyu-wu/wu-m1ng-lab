@@ -1,0 +1,15 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { url } from '../lib/url';
+---
+
+<Layout title="页面未找到">
+  <section class="page-width error-page">
+    <span class="eyebrow">ADDRESS NOT MAPPED</span>
+    <h1>0x404</h1>
+    <p class="muted">这段地址还没有映射。回到实验室，继续探索。</p>
+    <a class="button primary" href={url()}>
+      返回首页 →
+    </a>
+  </section>
+</Layout>

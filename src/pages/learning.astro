@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Learning from '../components/Learning';
+---
+
+<Layout title="学习进度与自测">
+  <header class="page-width page-head">
+    <span class="eyebrow">SMALL STEPS / LASTING UNDERSTANDING</span>
+    <h1>
+      学习，是持续连接的过程<span class="accent">.</span>
+    </h1>
+    <p>
+      记录理解，检验掌握，再回到值得重读的地方。所有学习与答题统计都来自你在当前浏览器的真实记录。
+    </p>
+  </header>
+  <section class="page-width content-section">
+    <Learning client:load />
+  </section>
+</Layout>

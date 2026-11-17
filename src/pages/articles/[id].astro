@@ -1,0 +1,203 @@
+---
+import { render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+import { getArticles, dateLabel, readingTime } from '../../lib/articles';
+import { knowledge } from '../../data/knowledge';
+import { questions } from '../../data/questions';
+import Quiz from '../../components/Quiz';
+import { url } from '../../lib/url';
+import 'katex/dist/katex.min.css';
+export async function getStaticPaths() {
+  return (await getArticles()).map((a) => ({ params: { id: a.id }, props: { article: a } }));
+}
+const { article } = Astro.props;
+const { Content, headings } = await render(article);
+const all = await getArticles();
+const index = all.findIndex((a) => a.id === article.id);
+const related = all
+  .filter(
+    (a) =>
+      a.id !== article.id && a.data.knowledge.some((id) => article.data.knowledge.includes(id)),
+  )
+  .slice(0, 3);
+---
+
+<Layout title={article.data.title} description={article.data.description}>
+  <div class="reading-progress" id="reading-progress"></div>
+  <div class="page-width article-layout">
+    <article
+      data-pagefind-body
+      data-type="文章"
+      data-category={article.data.category}
+      data-pagefind-filter="类型[data-type],分类[data-category]"
+    >
+      <header class="article-heading">
+        <span class="eyebrow">
+          <a href={url('archives/')}>FIELD NOTES</a> / {article.data.kind.toUpperCase()}
+        </span>
+        <h1 data-pagefind-meta="title">{article.data.title}</h1>
+        <p>{article.data.description}</p>
+        <div class="article-meta">
+          <time datetime={article.data.date.toISOString()}>{dateLabel(article.data.date)}</time>
+          <span>{readingTime(article.body)} min read</span>
+          <span>{article.data.difficulty}</span>
+          {article.data.example && <span class="example-tag">示例内容</span>}
+        </div>
+        <div class="tags" style="margin-top:18px">
+          {article.data.tags.map((t) => (
+            <span>#{t}</span>
+          ))}
+        </div>
+        {article.data.prerequisites.length > 0 && (
+          <p class="small muted">前置知识：{article.data.prerequisites.join(' · ')}</p>
+        )}
+      </header>
+      <details class="toc-mobile">
+        <summary>文章目录</summary>
+        {headings
+          .filter((h) => h.depth <= 3)
+          .map((h) => (
+            <a href={`#${h.slug}`}>{h.text}</a>
+          ))}
+      </details>
+      <div class="prose" id="article-body">
+        <Content />
+      </div>
+      <section class="panel" style="margin-top:30px" data-pagefind-ignore>
+        <h3>把这篇文章连接到知识地图</h3>
+        <div class="link-list">
+          {article.data.knowledge.map((id) => (
+            <a href={url(`knowledge/${id}/`)}>
+              {knowledge.find((k) => k.id === id)?.name} · 工具 / 实验 / 学习记录 →
+            </a>
+          ))}
+        </div>
+      </section>
+      {article.data.cards.length > 0 && (
+        <section class="panel" style="margin-top:24px" data-pagefind-ignore>
+          <h3>题解知识卡片</h3>
+          <div class="related-grid">
+            {article.data.cards.map((card) => (
+              <div class="callout" style="margin:0">
+                <b class="accent">{card.type}</b>
+                <p>{card.content}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {questions.some((q) => article.data.knowledge.includes(q.knowledge)) && (
+        <section style="margin-top:35px" data-pagefind-ignore>
+          <h2 style="margin-bottom:22px">读完之后，检验理解</h2>
+          <Quiz knowledgeIds={article.data.knowledge} client:visible />
+        </section>
+      )}
+      <div class="article-pagination" data-pagefind-ignore>
+        {all[index - 1] ? (
+          <a href={url(`articles/${all[index - 1].id}/`)}>← 上一篇：{all[index - 1].data.title}</a>
+        ) : (
+          <span />
+        )}
+        {all[index + 1] && (
+          <a href={url(`articles/${all[index + 1].id}/`)}>下一篇：{all[index + 1].data.title} →</a>
+        )}
+      </div>
+      {related.length > 0 && (
+        <section style="margin-top:35px" data-pagefind-ignore>
+          <h2>继续阅读</h2>
+          <div class="related-grid">
+            {related.map((a) => (
+              <a href={url(`articles/${a.id}/`)}>{a.data.title} →</a>
+            ))}
+          </div>
+        </section>
+      )}
+    </article>
+    <aside class="toc" data-pagefind-ignore>
+      <h2>ON THIS PAGE</h2>
+      {headings
+        .filter((h) => h.depth <= 3)
+        .map((h) => (
+          <a href={`#${h.slug}`} data-toc={h.slug}>
+            {h.text}
+          </a>
+        ))}
+      <a class="button secondary" href={url('knowledge/')}>
+        探索知识图谱 ↗
+      </a>
+    </aside>
+  </div>
+</Layout>
+<script>
+  document.querySelectorAll<HTMLImageElement>('.prose img').forEach((img) => {
+    img.loading = 'lazy';
+    img.decoding = 'async';
+  });
+  document.querySelectorAll<HTMLElement>('.prose pre').forEach((pre) => {
+    if (
+      pre.dataset.language === 'mermaid' ||
+      pre.querySelector('pre[data-language=mermaid] code, code.language-mermaid')
+    )
+      return;
+    const button = document.createElement('button');
+    button.className = 'copy-code';
+    button.textContent = '复制代码';
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.querySelector('code')?.textContent || '');
+        button.textContent = '已复制 ✓';
+      } catch {
+        button.textContent = '请手动复制';
+      }
+      setTimeout(() => (button.textContent = '复制代码'), 1800);
+    });
+    pre.append(button);
+  });
+  const mermaids = document.querySelectorAll<HTMLElement>(
+    'pre[data-language=mermaid] code, code.language-mermaid',
+  );
+  if (mermaids.length) {
+    try {
+      const { default: mermaid } = await import('mermaid');
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: document.documentElement.dataset.theme === 'light' ? 'default' : 'dark',
+      });
+      for (const [i, code] of Array.from(mermaids).entries()) {
+        const rendered = await mermaid.render(`flow-${i}`, code.textContent || '');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mermaid-figure';
+        wrapper.innerHTML = rendered.svg;
+        code.parentElement?.replaceWith(wrapper);
+      }
+    } catch {
+      console.warn('Mermaid 图无法渲染，已保留原始源码。');
+    }
+  }
+  const headings = Array.from(document.querySelectorAll<HTMLElement>('.prose h2,.prose h3'));
+  let pending = false;
+  const onScroll = () => {
+    if (pending) return;
+    pending = true;
+    requestAnimationFrame(() => {
+      const body = document.querySelector<HTMLElement>('#article-body')!;
+      const total = Math.max(1, body.offsetHeight - window.innerHeight);
+      const done = Math.min(
+        100,
+        Math.max(0, ((window.scrollY + 100 - body.offsetTop) / total) * 100),
+      );
+      document.querySelector<HTMLElement>('#reading-progress')!.style.width = `${done}%`;
+      let active = headings[0]?.id;
+      headings.forEach((h) => {
+        if (h.getBoundingClientRect().top < 160) active = h.id;
+      });
+      document
+        .querySelectorAll<HTMLElement>('[data-toc]')
+        .forEach((a) => a.classList.toggle('active', a.dataset.toc === active));
+      pending = false;
+    });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+</script>

@@ -1,0 +1,47 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import { categories, knowledge } from '../../data/knowledge';
+import { getArticles } from '../../lib/articles';
+import { url } from '../../lib/url';
+export function getStaticPaths() {
+  return categories.map((c) => ({ params: { id: c.id }, props: { category: c } }));
+}
+const { category } = Astro.props;
+const articles = (await getArticles()).filter((a) => a.data.category === category.id);
+---
+
+<Layout title={category.name}>
+  <header class="page-width page-head">
+    <span class="eyebrow">
+      <a href={url('categories/')}>CATEGORIES</a> / {category.id.toUpperCase()}
+    </span>
+    <h1>
+      {category.name}
+      <span class="accent">.</span>
+    </h1>
+    <p>{category.description}</p>
+  </header>
+  <section class="page-width content-section">
+    <div class="article-grid">
+      {articles.map((a, i) => (
+        <ArticleCard article={a} index={i} />
+      ))}
+    </div>
+    {!articles.length && (
+      <div class="empty">
+        这个方向还没有文章。可以先从下方知识点开始，或在 src/content/articles 中添加自己的记录。
+      </div>
+    )}
+    <h2 style="margin-top:35px">关联知识点</h2>
+    <div class="related-grid">
+      {knowledge
+        .filter((k) => k.category === category.id)
+        .map((k) => (
+          <a href={url(`knowledge/${k.id}/`)}>
+            {k.name} →<p class="muted small">{k.description}</p>
+          </a>
+        ))}
+    </div>
+  </section>
+</Layout>

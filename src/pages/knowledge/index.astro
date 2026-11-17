@@ -1,0 +1,25 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import KnowledgeGraph from '../../components/KnowledgeGraph';
+import { getArticles } from '../../lib/articles';
+const articles = (await getArticles()).map((a) => ({
+  id: a.id,
+  title: a.data.title,
+  knowledge: a.data.knowledge,
+  category: a.data.category,
+  kind: a.data.kind,
+}));
+---
+
+<Layout title="知识图谱">
+  <header class="page-width page-head">
+    <span class="eyebrow">CONNECT THE DOTS</span>
+    <h1>
+      你的网络安全知识地图<span class="accent">.</span>
+    </h1>
+    <p>知识不是孤立的条目。沿着前置依赖探索，让文章、工具、实验与学习状态在同一张图中相遇。</p>
+  </header>
+  <section class="page-width content-section">
+    <KnowledgeGraph articles={articles} client:load />
+  </section>
+</Layout>

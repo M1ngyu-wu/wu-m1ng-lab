@@ -1,0 +1,70 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { profile } from '../data/profile';
+import { url } from '../lib/url';
+---
+
+<Layout title="关于 wu_m1ng">
+  <header class="page-width page-head">
+    <span class="eyebrow">THE PERSON BEHIND THE NOTES</span>
+    <h1>
+      你好，我是 wu_m1ng<span class="accent">.</span>
+    </h1>
+    <p>以好奇心为起点，以可复现的证据为方法。</p>
+  </header>
+  <section class="page-width content-section about-grid">
+    <div class="panel">
+      <div class="about-brand">wu_m1ng_</div>
+      <h2>Cyber Security Lab</h2>
+      <p>{profile.bio}</p>
+      <div class="tags">
+        {['Security', 'CTF', 'Pwn', 'Web', 'Research', 'Knowledge'].map((t) => (
+          <span>{t}</span>
+        ))}
+      </div>
+      <h3 style="margin-top:30px">学习经历</h3>
+      <p>{profile.experience}</p>
+      <h3>项目经历</h3>
+      {profile.projects.length ? (
+        profile.projects.map((p) => (
+          <p>
+            <a class="accent" href={p.url}>
+              {p.name}
+            </a>{' '}
+            · {p.description}
+          </p>
+        ))
+      ) : (
+        <p>暂无公开项目经历。这里预留给未来真实完成的项目。</p>
+      )}
+    </div>
+    <aside class="panel">
+      <h2>关于这个空间</h2>
+      <p>
+        个人技术博客、CTF 知识库与交互学习实验室。文章与知识点、工具、实验、自测共享同一套关联数据。
+      </p>
+      <p>初始文章与题库明确标为示例内容；平台不会生成虚假的学习记录、赛事成绩或研究经历。</p>
+      <h3 style="margin-top:30px">保持联系</h3>
+      {profile.github && (
+        <p>
+          <a class="accent" href={profile.github}>
+            GitHub ↗
+          </a>
+        </p>
+      )}
+      {profile.email && (
+        <p>
+          <a class="accent" href={`mailto:${profile.email}`}>
+            {profile.email}
+          </a>
+        </p>
+      )}
+      {!profile.github && !profile.email && (
+        <p>GitHub 与联系方式待填写。编辑 src/data/profile.ts 后即可显示。</p>
+      )}
+      <a class="button secondary" href={url('rss.xml')}>
+        订阅文章 RSS ↗
+      </a>
+    </aside>
+  </section>
+</Layout>

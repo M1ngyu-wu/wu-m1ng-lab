@@ -1,0 +1,173 @@
+---
+import '../styles/global.css';
+import Icon from '../components/Icon';
+import { profile } from '../data/profile';
+import { url } from '../lib/url';
+const { title = profile.name, description = profile.description } = Astro.props;
+const nav = [
+  ['', 'Home'],
+  ['archives/', 'Archives'],
+  ['categories/', 'Categories'],
+  ['knowledge/', 'Knowledge'],
+  ['lab/', 'Pwn Lab'],
+  ['tools/', 'Tools'],
+  ['learning/', 'Learning'],
+  ['about/', 'About'],
+];
+const current = Astro.url.pathname;
+const canonical = new URL(current, Astro.site);
+---
+
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title===profile.name?`${title} — Cyber Security Lab`:`${title} · ${profile.name}`}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#0b111b" />
+    <meta property="og:title" content={`${title} · Cyber Security Lab`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={url('favicon.svg')} />
+    <link rel="alternate" type="application/rss+xml" title="wu_m1ng RSS" href={url('rss.xml')} />
+    <script is:inline>
+      try {
+        const t = localStorage.getItem('wu_m1ng.theme');
+        document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">
+      跳转到主要内容
+    </a>
+    <header class="site-header">
+      <a class="brand" href={url()} aria-label="wu_m1ng 首页">
+        <span class="brand-symbol">
+          w<span>_</span>
+        </span>
+        <span>
+          <strong>
+            wu_m1ng<span class="accent">.</span>
+          </strong>
+          <small>CYBER SECURITY LAB</small>
+        </span>
+      </a>
+      <nav id="nav" aria-label="主要导航">
+        {nav.map(([path, label]) => (
+          <a
+            class:list={{ active: path ? current.startsWith(url(path)) : current === url() }}
+            aria-current={
+              (path ? current.startsWith(url(path)) : current === url()) ? 'page' : undefined
+            }
+            href={url(path)}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+      <div class="header-actions">
+        <button class="search-trigger" data-search aria-label="打开全站搜索">
+          <Icon name="search" size={17} />
+          <span>Search</span>
+          <kbd>⌃ K</kbd>
+        </button>
+        <button id="theme" class="icon-button" aria-label="切换深浅主题">
+          <Icon name="sun" size={19} />
+        </button>
+        <button
+          id="menu"
+          class="icon-button mobile-only"
+          aria-label="展开导航"
+          aria-expanded="false"
+          aria-controls="nav"
+        >
+          <Icon name="menu" />
+        </button>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div>
+        <a class="footer-brand" href={url()}>
+          wu_m1ng<span class="accent">_</span>
+        </a>
+        <span>Keep curious. Keep breaking. Keep learning.</span>
+      </div>
+      <div>
+        <span class="status-dot"></span>
+        <span>Built for curiosity</span>
+        <a href={url('rss.xml')} aria-label="订阅 RSS">
+          <Icon name="rss" size={17} />
+        </a>
+        <a href={url('about/')}>About ↗</a>
+      </div>
+      <p>
+        © {new Date().getFullYear()} wu_m1ng · Cyber Security Lab{' '}
+        <span>示例内容用于教学 · 学习数据保存在当前浏览器</span>
+      </p>
+    </footer>
+    <dialog id="search-dialog" aria-labelledby="search-title">
+      <div class="search-head">
+        <h2 id="search-title">搜索实验室</h2>
+        <button class="icon-button" id="close-search" aria-label="关闭搜索">
+          ✕
+        </button>
+      </div>
+      <div id="search-root"></div>
+      <p class="muted small">搜索文章正文、知识点与工具。按 Esc 关闭。</p>
+    </dialog>
+    <script>
+      import { PagefindUI } from '@pagefind/default-ui';
+      import '@pagefind/default-ui/css/ui.css';
+      const dialog = document.querySelector<HTMLDialogElement>('#search-dialog')!;
+      let initialized = false;
+      const open = () => {
+        dialog.showModal();
+        if (!initialized) {
+          new PagefindUI({
+            element: '#search-root',
+            bundlePath: `${import.meta.env.BASE_URL}pagefind/`,
+            showSubResults: true,
+            showImages: false,
+            translations: {
+              placeholder: '搜索文章、知识点、命令…',
+              zero_results: '没有找到相关内容：[SEARCH_TERM]',
+            },
+          });
+          initialized = true;
+        }
+        setTimeout(() => dialog.querySelector<HTMLInputElement>('input')?.focus(), 30);
+      };
+      document.querySelectorAll('[data-search]').forEach((b) => b.addEventListener('click', open));
+      document.querySelector('#close-search')?.addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', (e) => {
+        if (e.target === dialog) dialog.close();
+      });
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          if (!dialog.open) open();
+        }
+      });
+      document.querySelector('#theme')?.addEventListener('click', () => {
+        const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = t;
+        try {
+          localStorage.setItem('wu_m1ng.theme', t);
+        } catch {}
+        window.dispatchEvent(new Event('theme-change'));
+      });
+      document.querySelector('#menu')?.addEventListener('click', () => {
+        const n = document.querySelector('#nav')!;
+        const open = n.classList.toggle('is-open');
+        document.querySelector('#menu')?.setAttribute('aria-expanded', String(open));
+      });
+    </script>
+  </body>
+</html>

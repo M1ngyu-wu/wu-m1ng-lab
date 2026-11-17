@@ -1,0 +1,89 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Quiz from '../../components/Quiz';
+import { knowledge, categories } from '../../data/knowledge';
+import { tools } from '../../data/tools';
+import { questions } from '../../data/questions';
+import { getArticles } from '../../lib/articles';
+import { url } from '../../lib/url';
+export function getStaticPaths() {
+  return knowledge.map((k) => ({ params: { id: k.id }, props: { node: k } }));
+}
+const { node } = Astro.props;
+const articles = (await getArticles()).filter((a) => a.data.knowledge.includes(node.id));
+const commands = tools.filter((t) => t.knowledge.includes(node.id));
+---
+
+<Layout title={node.name} description={node.description}>
+  <header
+    class="page-width page-head"
+    data-pagefind-body
+    data-type="知识点"
+    data-category={node.category}
+    data-pagefind-filter="类型[data-type],分类[data-category]"
+  >
+    <span class="eyebrow">
+      <a href={url('knowledge/')}>KNOWLEDGE</a> /{' '}
+      {categories.find((c) => c.id === node.category)?.name}
+    </span>
+    <h1 data-pagefind-meta="title">
+      {node.name}
+      <span class="accent">.</span>
+    </h1>
+    <p>{node.description}</p>
+    <p class="small muted">
+      示例知识条目 ·{' '}
+      <a class="accent" href={url(`learning/?node=${node.id}`)}>
+        修改掌握状态与个人笔记 →
+      </a>
+    </p>
+  </header>
+  <section class="page-width content-section">
+    <div class="two-col">
+      <section class="panel">
+        <h2>前置知识与后续方向</h2>
+        <div class="link-list">
+          {node.prerequisites.map((id) => (
+            <a href={url(`knowledge/${id}/`)}>前置：{knowledge.find((k) => k.id === id)?.name} →</a>
+          ))}
+          {!node.prerequisites.length && <p class="notice">无前置依赖，可从这里开始。</p>}
+          {knowledge
+            .filter((k) => k.prerequisites.includes(node.id))
+            .map((k) => (
+              <a href={url(`knowledge/${k.id}/`)}>下一步：{k.name} →</a>
+            ))}
+        </div>
+      </section>
+      <section class="panel">
+        <h2>文章与实验</h2>
+        <div class="link-list">
+          {articles.map((a) => (
+            <a href={url(`articles/${a.id}/`)}>{a.data.title} →</a>
+          ))}
+          {node.lab && <a href={url(`lab/?tab=${node.lab}`)}>打开 {node.lab} 可视化实验 →</a>}
+          {!articles.length && !node.lab && (
+            <p class="notice">暂无关联文章。可以在文章元数据 knowledge 字段加入此知识点 ID。</p>
+          )}
+        </div>
+      </section>
+    </div>
+    <section class="panel" style="margin-top:24px">
+      <h2>关联工具</h2>
+      <div class="related-grid">
+        {commands.map((t) => (
+          <a href={url(`tools/#${t.id}`)}>
+            {t.category} · {t.name}
+            <p class="muted small">{t.explanation}</p>
+          </a>
+        ))}
+      </div>
+      {!commands.length && <p class="notice">此知识点暂无关联工具。</p>}
+    </section>
+    {questions.some((q) => q.knowledge === node.id) && (
+      <section style="margin-top:35px">
+        <h2 style="margin-bottom:20px">检验理解</h2>
+        <Quiz knowledgeIds={[node.id]} client:visible />
+      </section>
+    )}
+  </section>
+</Layout>

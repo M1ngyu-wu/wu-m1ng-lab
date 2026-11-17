@@ -1,0 +1,17 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Toolbox from '../components/Toolbox';
+---
+
+<Layout title="工具与命令库">
+  <header class="page-width page-head">
+    <span class="eyebrow">THE RIGHT TOOL / THE RIGHT QUESTION</span>
+    <h1>
+      工具与命令速查<span class="accent">.</span>
+    </h1>
+    <p>不只是复制一条命令。理解它的用途、上下文与边界，让每一次操作都有依据。</p>
+  </header>
+  <section class="page-width content-section">
+    <Toolbox client:load />
+  </section>
+</Layout>

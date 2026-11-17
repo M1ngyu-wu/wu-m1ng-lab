@@ -125,6 +125,7 @@ const canonical = new URL(current, Astro.site);
     <script>
       import { PagefindUI } from '@pagefind/default-ui';
       import '@pagefind/default-ui/css/ui.css';
+      import { url } from '../lib/url';
       const dialog = document.querySelector<HTMLDialogElement>('#search-dialog')!;
       let initialized = false;
       const open = () => {
@@ -132,7 +133,8 @@ const canonical = new URL(current, Astro.site);
         if (!initialized) {
           new PagefindUI({
             element: '#search-root',
-            bundlePath: `${import.meta.env.BASE_URL}pagefind/`,
+            bundlePath: url('pagefind/'),
+            baseUrl: url(),
             showSubResults: true,
             showImages: false,
             translations: {

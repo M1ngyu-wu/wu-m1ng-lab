@@ -2,13 +2,16 @@
 
 个人网络安全知识库与交互式学习平台。Astro 静态页面负责内容，React 仅承载实验、图谱和学习交互，不需要数据库、账号或付费 API。
 
+网站地址：[https://m1ngyu-wu.github.io/wu-m1ng-lab/](https://m1ngyu-wu.github.io/wu-m1ng-lab/)。源码仓库：[M1ngyu-wu/wu-m1ng-lab](https://github.com/M1ngyu-wu/wu-m1ng-lab)。向 main 分支推送更新后，GitHub Actions 会自动检查、构建并重新发布网站；构建进度可在仓库 Actions 中查看。
+
 ## 安装与 Windows PowerShell 启动
 
 使用 Node.js 24.13+（推荐 24 LTS）和 npm。项目锁定依赖版本于 package-lock.json。
 
 ```powershell
-Set-Location 'C:\Users\wmy15\Documents\ChatGPT\pwn 3'
-npm install
+git clone https://github.com/M1ngyu-wu/wu-m1ng-lab.git
+Set-Location wu-m1ng-lab
+npm ci
 npm run dev
 ```
 

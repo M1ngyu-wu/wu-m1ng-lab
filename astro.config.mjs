@@ -41,7 +41,7 @@ const localSearch = {
 };
 
 export default defineConfig({
-  site: process.env.SITE_URL || 'https://wu-m1ng-lab-20261117.shashwu07.chatgpt.site',
+  site: process.env.SITE_URL || 'https://m1ngyu-wu.github.io',
   base: process.env.BASE_PATH || '/',
   integrations: [react(), mdx(), sitemap(), localSearch],
   vite: { plugins: [tailwindcss()] },

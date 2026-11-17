@@ -4,6 +4,7 @@ declare module '@pagefind/default-ui' {
     constructor(options: {
       element: string;
       bundlePath?: string;
+      baseUrl?: string;
       showSubResults?: boolean;
       showImages?: boolean;
       translations?: Record<string, string>;

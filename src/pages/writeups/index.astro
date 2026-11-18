@@ -1,0 +1,37 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ArchiveBrowse from '../../components/ArchiveBrowse';
+import { getArticles, readingTime } from '../../lib/articles';
+import { url } from '../../lib/url';
+import '../../styles/notebook.css';
+const examples = (await getArticles())
+  .filter((a) => a.data.kind === 'Writeup')
+  .map((a) => ({
+    id: a.id,
+    title: a.data.title,
+    path: 'articles/' + a.id + '/',
+    contest: '未知',
+    category: a.data.category,
+    difficulty: '未知',
+    date: a.data.date.toISOString(),
+    summary: a.data.description,
+    example: a.data.example,
+    tags: a.data.tags,
+    body: a.body || '',
+    minutes: readingTime(a.body),
+  }));
+---
+
+<Layout title="CTF 题解中心">
+  <header class="page-width page-head">
+    <span class="eyebrow">WRITEUPS</span>
+    <h1>CTF 题解中心</h1>
+    <p>按比赛、方向或知识点查找题解，查看原文与版本。</p>
+    <a class="button primary" href={url('writeups/import/')}>
+      导入与发布题解 →
+    </a>
+  </header>
+  <section class="page-width content-section">
+    <ArchiveBrowse examples={examples} client:load />
+  </section>
+</Layout>

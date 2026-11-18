@@ -1,6 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import Quiz from '../../components/Quiz';
+import ArchiveLinks from '../../components/ArchiveLinks';
 import { knowledge, categories } from '../../data/knowledge';
 import { tools } from '../../data/tools';
 import { questions } from '../../data/questions';
@@ -56,6 +57,7 @@ const commands = tools.filter((t) => t.knowledge.includes(node.id));
       </section>
       <section class="panel">
         <h2>文章与实验</h2>
+        <ArchiveLinks concepts={[node.id]} client:visible />
         <div class="link-list">
           {articles.map((a) => (
             <a href={url(`articles/${a.id}/`)}>{a.data.title} →</a>

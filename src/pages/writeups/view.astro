@@ -1,0 +1,12 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ArchiveDetail from '../../components/ArchiveDetail';
+import { relatedArticleIndex } from '../../lib/articles';
+import '../../styles/notebook.css';
+---
+
+<Layout title="题解详情">
+  <div class="page-width content-section">
+    <ArchiveDetail articles={await relatedArticleIndex()} client:load />
+  </div>
+</Layout>

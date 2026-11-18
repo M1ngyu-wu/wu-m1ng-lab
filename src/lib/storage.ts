@@ -26,6 +26,42 @@ export interface LabData {
   favorites: string[];
   attempts: Attempt[];
   reviews: Record<string, Review>;
+  /** One snapshot per concept and UTC date, retaining the first and last status. */
+  studyDays?: StudyDay[];
+}
+export interface StudyDay {
+  concept: string;
+  at: string;
+  before: Status;
+  after: Status;
+}
+const validConceptId = (id: string) =>
+  knowledge.some((k) => k.id === id) || /^concept-[a-f0-9]{24}$/.test(id);
+const validStatus = (value: unknown): value is Status =>
+  value === '未开始' || value === '学习中' || value === '已掌握';
+export function recordStudy(data: LabData, id: string, next: Study, now = new Date()): LabData {
+  const at = now.toISOString();
+  const day = at.slice(0, 10);
+  const previous = data.study[id] || blankStudy();
+  const history = [...(data.studyDays || [])];
+  if (previous.updated && !history.some((entry) => entry.concept === id)) {
+    history.push({
+      concept: id,
+      at: new Date(previous.updated).toISOString(),
+      before: previous.status,
+      after: previous.status,
+    });
+  }
+  const index = history.findIndex((r) => r.concept === id && r.at.slice(0, 10) === day);
+  const entry = {
+    concept: id,
+    at,
+    before: index < 0 ? previous.status : history[index].before,
+    after: next.status,
+  };
+  if (index < 0) history.push(entry);
+  else history[index] = entry;
+  return { ...data, study: { ...data.study, [id]: { ...next, updated: at } }, studyDays: history };
 }
 export const STORAGE_KEY = 'wu_m1ng.lab.v1';
 export const emptyData = (): LabData => ({
@@ -63,9 +99,9 @@ export function validateData(input: unknown): LabData {
   const result = emptyData();
   for (const [id, s] of Object.entries(input.study)) {
     if (
-      !knowledge.some((k) => k.id === id) ||
+      !validConceptId(id) ||
       !object(s) ||
-      !['未开始', '学习中', '已掌握'].includes(String(s.status)) ||
+      !validStatus(s.status) ||
       !integer(s.minutes, 1000000) ||
       !integer(s.rating, 5) ||
       typeof s.notes !== 'string' ||
@@ -85,6 +121,28 @@ export function validateData(input: unknown): LabData {
     if (typeof id !== 'string' || !tools.some((t) => t.id === id))
       throw new Error('收藏命令 ID 无效。');
     if (!result.favorites.includes(id)) result.favorites.push(id);
+  }
+  if (input.studyDays !== undefined) {
+    if (!Array.isArray(input.studyDays) || input.studyDays.length > 100000)
+      throw new Error('学习历史格式无效。');
+    const seen = new Set<string>();
+    result.studyDays = input.studyDays.map((entry) => {
+      if (
+        !object(entry) ||
+        typeof entry.concept !== 'string' ||
+        !validConceptId(entry.concept) ||
+        !Object.hasOwn(result.study, entry.concept) ||
+        !validDate(entry.at) ||
+        !validStatus(entry.before) ||
+        !validStatus(entry.after)
+      )
+        throw new Error('学习历史记录无效。');
+      const at = new Date(entry.at as string).toISOString();
+      const key = entry.concept + '/' + at.slice(0, 10);
+      if (seen.has(key)) throw new Error('学习历史存在重复日期。');
+      seen.add(key);
+      return { concept: entry.concept, at, before: entry.before, after: entry.after };
+    });
   }
   for (const a of input.attempts) {
     if (

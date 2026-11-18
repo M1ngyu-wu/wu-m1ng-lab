@@ -31,12 +31,15 @@ test('损坏的本地记录不会被普通编辑覆盖', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('原始记录存在读取错误');
   expect(await page.evaluate(() => localStorage.getItem('wu_m1ng.lab.v1'))).toBe('broken-original');
 });
-test('首页、终端、主题和移动导航', async ({ page }) => {
+test('首页题解入口、主题和移动导航', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'wu_m1ng_' })).toBeVisible();
-  await page.getByLabel('教学终端命令').fill('help');
-  await page.getByLabel('教学终端命令').press('Enter');
-  await expect(page.locator('.terminal-content')).toContainText('clear · help');
+  await expect(page.getByLabel('教学终端命令')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '浏览题解', exact: true })).toHaveAttribute(
+    'href',
+    /\/writeups\/$/,
+  );
+  await expect(page.getByRole('heading', { name: '最近学习动态' })).toBeVisible();
   await page.getByLabel('切换深浅主题').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.reload();
@@ -153,24 +156,20 @@ test('学习笔记立即保存，导出、导入预览和失败保护', async ({
   await page.getByRole('button', { name: '导出 JSON 备份' }).click();
   expect((await download).suggestedFilename()).toMatch(/wu_m1ng-backup/);
   const before = await page.evaluate(() => localStorage.getItem('wu_m1ng.lab.v1'));
-  await page
-    .getByLabel('导入 JSON 文件')
-    .setInputFiles({
-      name: 'invalid.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from('{"version":99}'),
-    });
+  await page.getByLabel('导入 JSON 文件').setInputFiles({
+    name: 'invalid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from('{"version":99}'),
+  });
   await expect(page.getByRole('alert')).toContainText('原有记录未修改');
   expect(await page.evaluate(() => localStorage.getItem('wu_m1ng.lab.v1'))).toBe(before);
   const valid = JSON.parse(before!);
   valid.study.linux.notes = '恢复测试';
-  await page
-    .getByLabel('导入 JSON 文件')
-    .setInputFiles({
-      name: 'valid.json',
-      mimeType: 'application/json',
-      buffer: Buffer.from(JSON.stringify(valid)),
-    });
+  await page.getByLabel('导入 JSON 文件').setInputFiles({
+    name: 'valid.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(valid)),
+  });
   await expect(page.getByRole('heading', { name: '导入前预览' })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('wu_m1ng.lab.v1'))).toBe(before);
   await page.getByRole('button', { name: '确认替换并导入' }).click();

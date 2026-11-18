@@ -1,0 +1,16 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ArchiveImport from '../../components/ArchiveImport';
+import '../../styles/notebook.css';
+---
+
+<Layout title="Import Writeup">
+  <header class="page-width page-head">
+    <span class="eyebrow">IMPORT WRITEUP</span>
+    <h1>导入题解</h1>
+    <p>文件在当前浏览器中解析。导入后即可阅读、搜索和查看来源。</p>
+  </header>
+  <div class="page-width content-section">
+    <ArchiveImport client:load />
+  </div>
+</Layout>

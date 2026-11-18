@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import ArchiveLinks from '../../components/ArchiveLinks';
 import { tools } from '../../data/tools';
 import { knowledge } from '../../data/knowledge';
 import { getArticles } from '../../lib/articles';
@@ -50,6 +51,7 @@ const articles = (await getArticles()).filter((a) =>
         <p>{tool.caution}</p>
       </div>
       <div class="link-list">
+        <ArchiveLinks tool={tool.id} concepts={tool.knowledge} client:visible />
         {tool.knowledge.map((id) => (
           <a href={url(`knowledge/${id}/`)}>
             知识点 · {knowledge.find((k) => k.id === id)?.name} →

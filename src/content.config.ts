@@ -15,6 +15,7 @@ const articles = defineCollection({
     knowledge: z.array(z.string().refine((id) => knowledge.some((k) => k.id === id), '未知知识点')),
     kind: z.enum(['Note', 'Writeup']).default('Note'),
     example: z.boolean().default(true),
+    codeIndex: z.boolean().default(false),
     cards: z
       .array(
         z.object({

@@ -1,0 +1,24 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Growth from '../components/Growth';
+import { getArticles } from '../lib/articles';
+const articles = (await getArticles()).map(({ data }) => ({
+  category: data.category,
+  kind: data.kind,
+  example: data.example,
+  date: data.date.toISOString(),
+}));
+---
+
+<Layout title="成长分析">
+  <header class="page-width page-head">
+    <span class="eyebrow">GROWTH ANALYTICS</span>
+    <h1>
+      成长分析<span class="accent">.</span>
+    </h1>
+    <p>按技术方向回顾题解、学习和自测。学习状态和答题历史来自当前浏览器。</p>
+  </header>
+  <section class="page-width content-section">
+    <Growth articles={articles} client:load />
+  </section>
+</Layout>

@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { categories, knowledge, learningOrder } from '../data/knowledge';
+import { categories, knowledge as builtins, learningOrder } from '../data/knowledge';
+import { useCatalog } from './useCatalog';
+import { archivePath, latestVersion } from '../lib/growth';
 import {
   blankStudy,
   validateData,
+  recordStudy,
   STORAGE_KEY,
   type LabData,
   type Study,
@@ -21,6 +24,11 @@ function download(text: string, name: string) {
 }
 export default function Learning() {
   const { data, update, error, ready } = useLab();
+  const { nodes: knowledge, docs, catalogError } = useCatalog();
+  const ordered = [
+    ...learningOrder(),
+    ...knowledge.filter((k) => !builtins.some((n) => n.id === k.id)),
+  ];
   const [tab, setTab] = useState('progress'),
     [selected, setSelected] = useState('linux'),
     [category, setCategory] = useState('全部'),
@@ -28,12 +36,19 @@ export default function Learning() {
     [message, setMessage] = useState(''),
     [preview, setPreview] = useState<LabData | null>(null),
     [importError, setImportError] = useState('');
+  const [requested, setRequested] = useState<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('tab') === 'quiz') setTab('quiz');
     const id = params.get('node');
-    if (knowledge.some((k) => k.id === id)) setSelected(id!);
+    setRequested(id);
   }, []);
+  useEffect(() => {
+    if (requested && knowledge.some((k) => k.id === requested)) {
+      setSelected(requested);
+      setRequested(null);
+    }
+  }, [requested, knowledge]);
   useEffect(() => {
     setDraft(data.study[selected] || blankStudy());
   }, [selected, data]);
@@ -45,15 +60,18 @@ export default function Learning() {
       setMessage('学习时长请输入 0–1000000 的整数。');
       return;
     }
-    if (
-      update({
-        ...data,
-        study: { ...data.study, [selected]: { ...next, updated: new Date().toISOString() } },
-      })
-    )
-      setMessage('已自动保存到当前浏览器。');
+    if (update(recordStudy(data, selected, next))) setMessage('已自动保存到当前浏览器。');
   };
-  const current = knowledge.find((k) => k.id === selected)!;
+  const current = knowledge.find((k) => k.id === selected) || {
+    id: selected,
+    name: selected,
+    description: '相关题解已不在当前知识库，此前保存的学习记录仍可编辑。',
+    prerequisites: [] as string[],
+  };
+  const isBuiltin = builtins.some((n) => n.id === selected);
+  const relatedDocs = docs.filter((doc) =>
+    latestVersion(doc).concepts.some((c) => c.id === selected),
+  );
   const count = (s: Status) =>
     knowledge.filter((k) => (data.study[k.id]?.status || '未开始') === s).length;
   const importFile = async (file: File | undefined) => {
@@ -72,6 +90,11 @@ export default function Learning() {
   };
   return (
     <>
+      {catalogError && (
+        <p className="notice" role="status">
+          {catalogError}
+        </p>
+      )}
       {error && (
         <div className="callout error" role="alert">
           {error}
@@ -97,7 +120,13 @@ export default function Learning() {
         ))}
       </div>
       {tab === 'quiz' ? (
-        <Quiz />
+        <Quiz
+          initialKnowledge={
+            new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
+              'node',
+            ) || undefined
+          }
+        />
       ) : tab === 'backup' ? (
         <section className="panel">
           <h2>让学习记录始终属于你</h2>
@@ -233,7 +262,7 @@ export default function Learning() {
           </div>
           <div className="study-layout">
             <div className="study-list">
-              {learningOrder()
+              {ordered
                 .filter((k) => category === '全部' || k.category === category)
                 .map((k, i) => (
                   <button
@@ -321,9 +350,23 @@ export default function Learning() {
                   ? new Date(data.study[selected].updated).toLocaleString('zh-CN')
                   : '尚无记录'}
               </p>
-              <a href={url(`knowledge/${selected}/`)} className="text-link">
+              <a
+                href={url(
+                  isBuiltin
+                    ? `knowledge/${selected}/`
+                    : `knowledge/?node=${encodeURIComponent(selected)}`,
+                )}
+                className="text-link"
+              >
                 查看文章、工具与关联实验 →
               </a>
+              <div className="link-list">
+                {relatedDocs.map((doc) => (
+                  <a key={doc.id} href={url(archivePath(doc.id))}>
+                    {latestVersion(doc).title} →
+                  </a>
+                ))}
+              </div>
             </section>
           </div>
           <section className="panel" style={{ marginTop: 25 }}>
@@ -340,7 +383,7 @@ export default function Learning() {
                       style={{ background: 'none', border: 0, padding: 0 }}
                       onClick={() => setSelected(id)}
                     >
-                      {knowledge.find((k) => k.id === id)?.name}
+                      {knowledge.find((k) => k.id === id)?.name || id}
                     </button>
                     <span>
                       {s.status} · {s.minutes} 分钟 ·{' '}

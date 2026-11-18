@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { ArchiveGrid } from '../components/ArchiveBrowse';
 import ArticleCard from '../components/ArticleCard.astro';
 import { getArticles } from '../lib/articles';
 import { categories } from '../data/knowledge';
@@ -47,6 +48,7 @@ const articles = await getArticles();
       {articles.length} 篇文章
     </p>
     <div class="article-grid" id="article-results">
+      <ArchiveGrid client:load />
       {articles.map((a, i) => (
         <div
           data-article
@@ -86,4 +88,19 @@ const articles = await getArticles();
     document.querySelector<HTMLElement>('#article-empty')!.hidden = count > 0;
   };
   ids.forEach((id) => document.getElementById(id)?.addEventListener('input', filter));
+  function syncOptions() {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-article]'));
+    for (const [id, values] of [
+      ['article-tag', rows.flatMap((el) => JSON.parse(el.dataset.tags || '[]') as string[])],
+      ['article-date', rows.map((el) => el.dataset.date || '')],
+    ] as const) {
+      const control = document.getElementById(id) as HTMLSelectElement;
+      for (const value of new Set(values))
+        if (value && !Array.from(control.options).some((o) => o.value === value))
+          control.add(new Option(value, value));
+    }
+    filter();
+  }
+  window.addEventListener('archive-grid', syncOptions);
+  syncOptions();
 </script>

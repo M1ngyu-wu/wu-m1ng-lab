@@ -1,208 +1,135 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon';
-import Terminal from '../components/Terminal';
+import RecentActivity from '../components/RecentActivity';
+import { ArchiveRecent } from '../components/ArchiveBrowse';
 import ArticleCard from '../components/ArticleCard.astro';
-import { categories, knowledge } from '../data/knowledge';
-import { getArticles } from '../lib/articles';
-import { profile } from '../data/profile';
+import { categories } from '../data/knowledge';
+import { getArticles, dateLabel } from '../lib/articles';
 import { url } from '../lib/url';
+import '../styles/notebook.css';
+
 const articles = await getArticles();
 const modules = [
-  {
-    n: '01',
-    icon: 'lab',
-    title: 'Pwn Lab',
-    subtitle: '把抽象原理，变成可见的过程。',
-    body: '栈溢出、ROP、ret2libc 与 Syscall，逐字节观察，逐指令理解。',
-    path: 'lab/',
-    label: '开始实验',
-    accent: true,
-  },
-  {
-    n: '02',
-    icon: 'network',
-    title: 'Knowledge Graph',
-    subtitle: '连接知识，构建自己的安全地图。',
-    body: '从一个知识点出发，发现前置依赖、关联文章和下一步方向。',
-    path: 'knowledge/',
-    label: '探索图谱',
-  },
-  {
-    n: '03',
-    icon: 'command',
-    title: 'Toolbox',
-    subtitle: '好用的命令，随时触手可及。',
-    body: 'Linux、GDB、Pwntools 等常用工具，附解释、示例与收藏。',
-    path: 'tools/',
-    label: '打开工具箱',
-  },
-  {
-    n: '04',
-    icon: 'route',
-    title: 'Learning Path',
-    subtitle: '让每一步学习，都留下真实记录。',
-    body: '管理进度、完成自测、复盘错题，建立属于自己的学习节奏。',
-    path: 'learning/',
-    label: '继续学习',
-  },
+  ['book', 'CTF 题解中心', '浏览题解与历史版本', 'writeups/'],
+  ['lab', 'Pwn 可视化实验室', '观察内存与寄存器', 'lab/'],
+  ['network', '网络安全知识图谱', '查看知识点之间的联系', 'knowledge/'],
+  ['command', '工具与命令速查库', '查找用法与笔记', 'tools/'],
+  ['learning', '学习进度', '记录学习与自测', 'learning/'],
 ];
 ---
 
 <Layout>
-  <section class="hero page-width" data-pagefind-ignore>
-    <div class="hero-grid"></div>
-    <div class="hero-copy">
-      <div class="eyebrow">
-        <span class="status-dot"></span> PERSONAL KNOWLEDGE · OPEN CURIOSITY
-      </div>
+  <section class="page-width notebook-hero">
+    <div class="notebook-title">
+      <span class="eyebrow">CYBER SECURITY LAB</span>
       <h1>
         wu_m1ng<span class="accent">_</span>
       </h1>
-      <div class="hero-subtitle">
-        CYBER SECURITY <span>LAB</span>
-      </div>
-      <p>
-        {profile.description}
-        <br />
-        <span>Learn by breaking. Understand by building.</span>
-      </p>
+      <p>记录漏洞分析、CTF 题解与网络安全技术探索。</p>
       <div class="hero-tags">
         {['PWN', 'WEB', 'CRYPTO', 'REVERSE', 'LINUX'].map((t) => (
           <span>{t}</span>
         ))}
       </div>
       <div class="hero-buttons">
-        <a class="button primary" href={url('archives/')}>
-          Explore Articles <Icon name="right" size={17} />
+        <a class="button primary" href={url('writeups/')}>
+          浏览题解 <Icon name="right" size={16} />
         </a>
-        <a class="button secondary" href={url('lab/')}>
-          <Icon name="terminal" size={17} />
-          Enter Pwn Lab
+        <a class="button secondary" href={url('knowledge/')}>
+          探索知识图谱 <Icon name="network" size={16} />
         </a>
       </div>
     </div>
-    <div class="hero-terminal">
-      <div class="terminal-float">
-        ~/build/understanding <span>↗</span>
+    <aside class="notebook-index" aria-label="知识库工作区">
+      <div class="index-heading">
+        <Icon name="layers" /> 知识库工作区
       </div>
-      <Terminal client:load />
-    </div>
-    <div class="hero-baseline">
-      <span>
-        <i class="status-dot" /> A space for experiments, notes & discoveries.
-      </span>
-      <span>SCROLL TO EXPLORE ↓</span>
-    </div>
-  </section>
-  <section class="stats-strip page-width" aria-label="内容统计">
-    {[
-      [articles.length, 'ARTICLES', '技术文章'],
-      [articles.filter((a) => a.data.kind === 'Writeup').length, 'WRITEUPS', '示例题解'],
-      [knowledge.length, 'KNOWLEDGE NODES', '知识节点'],
-      [categories.length, 'CATEGORIES', '技术方向'],
-      [profile.projects.length, 'PROJECTS', '个人项目'],
-    ].map(([n, label, zh]) => (
-      <div>
-        <strong>{String(n).padStart(2, '0')}</strong>
-        <div>
-          <span>{label}</span>
-          <small>{zh}</small>
-        </div>
-      </div>
-    ))}
-  </section>
-  <section class="page-width section-block">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">01 / EXPLORE THE LAB</span>
-        <h2>
-          不止于阅读<span class="heading-dot">.</span>
-        </h2>
-        <p>在实验、连接与复盘中，把知识变成理解。</p>
-      </div>
-      <span class="section-note">LEARN. CONNECT. PRACTICE.</span>
-    </div>
-    <div class="module-grid">
-      {modules.map((m) => (
-        <a class:list={['module-card', { highlight: m.accent }]} href={url(m.path)}>
-          <div class="module-top">
-            <span class="module-icon">
-              <Icon name={m.icon} size={23} />
-            </span>
-            <span>
-              {m.n} <Icon name="arrow" size={18} />
-            </span>
-          </div>
-          <h3>{m.title}</h3>
-          <h4>{m.subtitle}</h4>
-          <p>{m.body}</p>
-          <span class="module-link">
-            {m.label}
-            <Icon name="right" size={16} />
+      {[
+        ['writeups/import/', '导入题解', 'Markdown · TXT'],
+        ['search/code/', '检索代码', '章节与代码片段'],
+        ['growth/', '查看成长', '进度与复习记录'],
+      ].map(([path, title, hint]) => (
+        <a href={url(path)}>
+          <span>
+            {title}
+            <small>{hint}</small>
           </span>
+          <Icon name="arrow" size={18} />
+        </a>
+      ))}
+    </aside>
+  </section>
+  <section class="page-width notebook-section">
+    <h2>实验室入口</h2>
+    <div class="notebook-modules">
+      {modules.map(([icon, title, desc, path]) => (
+        <a href={url(path)}>
+          <Icon name={icon} size={22} />
+          <strong>{title}</strong>
+          <small>{desc}</small>
         </a>
       ))}
     </div>
   </section>
-  <section class="page-width section-block">
+  <section class="page-width notebook-section">
     <div class="section-heading">
-      <div>
-        <span class="eyebrow">02 / FIELD NOTES</span>
-        <h2>
-          最新记录<span class="heading-dot">.</span>
-        </h2>
-        <p>写下过程，留下思考。每一次探索都值得被记录。</p>
-      </div>
+      <h2>最新题解</h2>
+      <a class="text-link" href={url('writeups/')}>
+        全部题解 →
+      </a>
+    </div>
+    <ArchiveRecent limit={3} client:load />
+    {articles
+      .filter((a) => a.data.kind === 'Writeup')
+      .slice(0, 3)
+      .map((a) => (
+        <a class="notebook-row" href={url('articles/' + a.id + '/')}>
+          <time>{dateLabel(a.data.date)}</time>
+          <strong>{a.data.title}</strong>
+          <small>教学示例 ↗</small>
+        </a>
+      ))}
+  </section>
+  <section class="page-width notebook-section">
+    <div class="section-heading">
+      <h2>最新技术文章</h2>
       <a class="text-link" href={url('archives/')}>
-        全部文章 <Icon name="right" size={17} />
+        文章归档 →
       </a>
     </div>
     <div class="article-grid">
-      {articles.slice(0, 3).map((a, i) => (
-        <ArticleCard article={a} index={i} />
-      ))}
-    </div>
-    <div class="sample-note">
-      <Icon name="shield" size={15} /> 当前文章为教学示例。真实的技术积累，从你的下一篇记录开始。
+      {articles
+        .filter((a) => a.data.kind !== 'Writeup')
+        .slice(0, 3)
+        .map((a, i) => (
+          <ArticleCard article={a} index={i} />
+        ))}
     </div>
   </section>
-  <section class="page-width section-block">
+  <section class="page-width notebook-section">
     <div class="section-heading">
-      <div>
-        <span class="eyebrow">03 / FIND YOUR DIRECTION</span>
-        <h2>
-          技术版图<span class="heading-dot">.</span>
-        </h2>
-      </div>
-      <a class="text-link" href={url('categories/')}>
-        浏览分类 <Icon name="right" size={17} />
+      <h2>知识体系</h2>
+      <a class="text-link" href={url('knowledge/')}>
+        查看图谱 →
       </a>
     </div>
     <div class="category-grid">
       {categories.map((c) => (
-        <a href={url(`categories/${c.id}/`)} style={`--category-color:${c.color}`}>
-          <Icon name={c.icon} size={23} />
+        <a href={url('categories/' + c.id + '/')} style={'--category-color:' + c.color}>
+          <Icon name={c.icon} size={20} />
           <h3>{c.name}</h3>
-          <span>
-            {articles.filter((a) => a.data.category === c.id).length} 篇文章{' '}
-            <Icon name="arrow" size={14} />
-          </span>
         </a>
       ))}
     </div>
   </section>
-  <section class="page-width curiosity">
-    <span class="curiosity-icon">
-      <Icon name="fingerprint" size={40} />
-    </span>
-    <div>
-      <span class="eyebrow">THE JOURNEY IS THE REWARD</span>
-      <h2>保持好奇，持续探索。</h2>
-      <p>不急于知道所有答案，先学会提出更好的问题。</p>
+  <section class="page-width notebook-section">
+    <div class="section-heading">
+      <h2>最近学习动态</h2>
+      <a class="text-link" href={url('growth/')}>
+        成长分析 →
+      </a>
     </div>
-    <a class="button secondary" href={url('learning/')}>
-      开启学习路线 <Icon name="right" size={16} />
-    </a>
+    <RecentActivity client:load />
   </section>
 </Layout>

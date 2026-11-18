@@ -8,7 +8,7 @@
     "check": "node scripts/astro.mjs check",
     "build": "node scripts/astro.mjs build && pagefind --site dist",
     "preview": "node scripts/astro.mjs preview --host 127.0.0.1",
-    "test": "node --import tsx --test tests/core.test.ts",
+    "test": "node --import tsx --test \"tests/*.test.ts\"",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -21,9 +21,12 @@
     "@types/node": "^26.6.6",
     "astro": "^7.4.12",
     "cytoscape": "^3.33.0",
+    "fflate": "^0.8.3",
     "katex": "^0.19.1",
     "lucide-react": "^0.468.0",
+    "mdast-util-from-markdown": "^2.1.0",
     "mermaid": "^12.3.0",
+    "pdfjs-dist": "^6.5.438",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "rehype-katex": "^7.0.1",

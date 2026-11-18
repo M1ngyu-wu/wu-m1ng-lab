@@ -8,6 +8,7 @@ difficulty: 入门
 prerequisites: [HTTP 基础, SQL 查询基础]
 knowledge: [sqli, http, xss, ssrf]
 example: true
+codeIndex: true
 ---
 
 > 示例教程，仅使用内存数据库，不涉及线上站点或真实用户数据。

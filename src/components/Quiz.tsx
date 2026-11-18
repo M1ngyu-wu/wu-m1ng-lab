@@ -11,9 +11,15 @@ const typeNames = {
   short: '简答题',
   flashcard: '闪卡',
 };
-export default function Quiz({ knowledgeIds }: { knowledgeIds?: string[] }) {
+export default function Quiz({
+  knowledgeIds,
+  initialKnowledge,
+}: {
+  knowledgeIds?: string[];
+  initialKnowledge?: string;
+}) {
   const { data, update, error } = useLab();
-  const [filter, setFilter] = useState('全部'),
+  const [filter, setFilter] = useState(initialKnowledge || '全部'),
     [mode, setMode] = useState('all'),
     [index, setIndex] = useState(0),
     [answer, setAnswer] = useState<string[]>([]),

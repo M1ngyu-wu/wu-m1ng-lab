@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CodeSearch from '../../components/CodeSearch';
+import { getArticles } from '../../lib/articles';
+import { indexMarkdown } from '../../lib/code-search';
+import '../../styles/notebook.css';
+const articles = await getArticles();
+const initial = articles
+  .filter((a) => a.data.codeIndex)
+  .flatMap((a) =>
+    indexMarkdown(a.body || '', {
+      title: a.data.title,
+      category: a.data.category,
+      path: 'articles/' + a.id + '/',
+    }),
+  );
+---
+
+<Layout title="代码检索">
+  <header class="page-width page-head">
+    <span class="eyebrow">CODE SEARCH</span>
+    <h1>代码检索</h1>
+    <p>在系统笔记、防御分析和导入的常规技术文档中查找原文，跳转到匹配片段。</p>
+  </header>
+  <section class="page-width content-section">
+    <CodeSearch initial={initial} client:load />
+  </section>
+</Layout>

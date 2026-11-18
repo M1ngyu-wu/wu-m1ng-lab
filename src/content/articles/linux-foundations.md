@@ -8,6 +8,7 @@ difficulty: 入门
 prerequisites: []
 knowledge: [linux, forensics, http]
 example: true
+codeIndex: true
 ---
 
 > 示例学习笔记，不包含真实学习经历。

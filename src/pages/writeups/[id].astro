@@ -1,0 +1,19 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ArchiveDetail from '../../components/ArchiveDetail';
+import { publishedDocs } from '../../lib/archive-public';
+import { currentVersion } from '../../lib/archive';
+import { relatedArticleIndex } from '../../lib/articles';
+import '../../styles/notebook.css';
+export function getStaticPaths() {
+  return publishedDocs.map((doc) => ({ params: { id: doc.id }, props: { doc } }));
+}
+const { doc } = Astro.props;
+const v = currentVersion(doc);
+---
+
+<Layout title={v.title} description={v.summary}>
+  <div class="page-width content-section">
+    <ArchiveDetail published={doc} articles={await relatedArticleIndex()} client:load />
+  </div>
+</Layout>

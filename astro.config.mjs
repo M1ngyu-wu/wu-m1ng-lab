@@ -8,6 +8,7 @@ import rehypeKatex from 'rehype-katex';
 import { unified } from '@astrojs/markdown-remark';
 import { createReadStream, existsSync } from 'node:fs';
 import { resolve, sep } from 'node:path';
+import { archiveReceipts } from './scripts/archive-receipts.mjs';
 
 const localSearch = {
   name: 'local-pagefind',
@@ -44,7 +45,10 @@ export default defineConfig({
   site: process.env.SITE_URL || 'https://m1ngyu-wu.github.io',
   base: process.env.BASE_PATH || '/',
   integrations: [react(), mdx(), sitemap(), localSearch],
-  vite: { plugins: [tailwindcss()] },
+  vite: {
+    plugins: [tailwindcss()],
+    define: { __ARCHIVE_RECEIPTS__: JSON.stringify(archiveReceipts()) },
+  },
   markdown: {
     processor: unified({ remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex] }),
     shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } },

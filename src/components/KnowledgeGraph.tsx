@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCatalog } from './useCatalog';
+import { currentVersion } from '../lib/archive';
+import { documentPath } from '../lib/archive-public';
 import cytoscape, { type Core, type ElementDefinition } from 'cytoscape';
-import { categories, knowledge } from '../data/knowledge';
+import { categories, knowledge as builtins } from '../data/knowledge';
 import { tools } from '../data/tools';
 import { questions } from '../data/questions';
 import { profile } from '../data/profile';
@@ -12,8 +15,27 @@ export interface ArticleLink {
   knowledge: string[];
   category: string;
   kind: string;
+  path?: string;
 }
-export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }) {
+export default function KnowledgeGraph({ articles: originals }: { articles: ArticleLink[] }) {
+  const { nodes: knowledge, docs } = useCatalog();
+  const articles = useMemo(
+    () => [
+      ...originals,
+      ...docs.map((d) => {
+        const v = currentVersion(d);
+        return {
+          id: d.id,
+          title: v.title,
+          knowledge: v.concepts.map((c) => c.id),
+          category: v.category,
+          kind: 'Import',
+          path: documentPath(d),
+        };
+      }),
+    ],
+    [originals, docs],
+  );
   const container = useRef<HTMLDivElement>(null),
     cy = useRef<Core | null>(null);
   const { data } = useLab();
@@ -23,6 +45,10 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
     [showResources, setShowResources] = useState(false),
     [graphError, setGraphError] = useState('');
   const node = knowledge.find((k) => k.id === selected);
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get('node');
+    if (id) setSelected(id);
+  }, []);
   const currentArticle = articles.find((a) => `a:${a.id}` === selected),
     currentTool = tools.find((t) => `t:${t.id}` === selected);
   useEffect(() => {
@@ -53,7 +79,7 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
                 : '#7d99b4',
         },
       });
-      edge(`c:${k.category}`, k.id, '属于');
+      if (categories.some((c) => c.id === k.category)) edge(`c:${k.category}`, k.id, '属于');
       k.prerequisites.filter((p) => ids.has(p)).forEach((p) => edge(p, k.id, '前置知识'));
     });
     if (showResources) {
@@ -191,7 +217,7 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
     } catch {
       setGraphError('图形视图无法启动，可使用下方知识点选择器与详情链接。');
     }
-  }, [category, showResources, data.study]);
+  }, [category, showResources, data.study, knowledge, articles]);
   useEffect(() => {
     const instance = cy.current;
     if (!instance) return;
@@ -209,7 +235,10 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
   const matches = knowledge.filter(
     (k) =>
       (category === '全部' || k.category === category) &&
-      `${k.name} ${k.description}`.toLowerCase().includes(query.toLowerCase()),
+      [k.name, k.description, ...(k.aliases || [])]
+        .join(' ')
+        .toLowerCase()
+        .includes(query.toLowerCase()),
   );
   return (
     <>
@@ -309,6 +338,7 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
               <span className="eyebrow">KNOWLEDGE NODE</span>
               <h3 style={{ marginTop: 10 }}>{node.name}</h3>
               <p>{node.description}</p>
+              {node.aliases?.length ? <p>已关联名称 · {node.aliases.join(' / ')}</p> : null}
               <span className="filter-chip">{data.study[node.id]?.status || '未开始'}</span>
               <h4 style={{ marginTop: 20 }}>前置知识</h4>
               <div className="link-list">
@@ -320,13 +350,15 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
                 {!node.prerequisites.length && <p>无前置依赖。</p>}
               </div>
               <div className="link-list">
-                <a href={url(`knowledge/${node.id}/`)}>查看完整知识关联 →</a>
+                {builtins.some((k) => k.id === node.id) && (
+                  <a href={url(`knowledge/${node.id}/`)}>查看完整知识关联 →</a>
+                )}
                 <a href={url(`learning/?node=${node.id}`)}>记录学习进度 →</a>
                 {node.lab && <a href={url(`lab/?tab=${node.lab}`)}>进入关联实验 →</a>}
                 {articles
                   .filter((a) => a.knowledge.includes(node.id))
                   .map((a) => (
-                    <a key={a.id} href={url(`articles/${a.id}/`)}>
+                    <a key={a.id} href={url(a.path || `articles/${a.id}/`)}>
                       {a.title} →
                     </a>
                   ))}
@@ -339,8 +371,11 @@ export default function KnowledgeGraph({ articles }: { articles: ArticleLink[] }
           ) : currentArticle ? (
             <>
               <h3>{currentArticle.title}</h3>
-              <p>示例技术文章 · 与知识点元数据自动关联。</p>
-              <a className="button primary" href={url(`articles/${currentArticle.id}/`)}>
+              <p>与当前知识点关联的文章</p>
+              <a
+                className="button primary"
+                href={url(currentArticle.path || `articles/${currentArticle.id}/`)}
+              >
                 阅读文章 →
               </a>
             </>

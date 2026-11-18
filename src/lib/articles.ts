@@ -10,3 +10,5 @@ export const readingTime = (body = '') =>
     ),
   );
 export const dateLabel = (date: Date) => date.toISOString().slice(0, 10);
+export const relatedArticleIndex = async () =>
+  (await getArticles()).map((a) => ({ id: a.id, title: a.data.title, concepts: a.data.knowledge }));

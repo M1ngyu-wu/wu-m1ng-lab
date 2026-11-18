@@ -6,6 +6,7 @@ import { url } from '../lib/url';
 const { title = profile.name, description = profile.description } = Astro.props;
 const nav = [
   ['', 'Home'],
+  ['writeups/', 'Writeups'],
   ['archives/', 'Archives'],
   ['categories/', 'Categories'],
   ['knowledge/', 'Knowledge'],
@@ -120,7 +121,12 @@ const canonical = new URL(current, Astro.site);
         </button>
       </div>
       <div id="search-root"></div>
-      <p class="muted small">搜索文章正文、知识点与工具。按 Esc 关闭。</p>
+      <p class="muted small">
+        搜索文章正文、知识点与工具。
+        <a class="text-link" href={url('search/code/')}>
+          进入代码检索 →
+        </a>
+      </p>
     </dialog>
     <script>
       import { PagefindUI } from '@pagefind/default-ui';

@@ -5,6 +5,7 @@ import { getArticles, dateLabel, readingTime } from '../../lib/articles';
 import { knowledge } from '../../data/knowledge';
 import { questions } from '../../data/questions';
 import Quiz from '../../components/Quiz';
+import ArchiveLinks from '../../components/ArchiveLinks';
 import { url } from '../../lib/url';
 import 'katex/dist/katex.min.css';
 export async function getStaticPaths() {
@@ -65,6 +66,7 @@ const related = all
       </div>
       <section class="panel" style="margin-top:30px" data-pagefind-ignore>
         <h3>把这篇文章连接到知识地图</h3>
+        <ArchiveLinks concepts={article.data.knowledge} client:visible />
         <div class="link-list">
           {article.data.knowledge.map((id) => (
             <a href={url(`knowledge/${id}/`)}>
@@ -129,6 +131,11 @@ const related = all
   </div>
 </Layout>
 <script>
+  document.querySelectorAll<HTMLElement>('#article-body code').forEach((code, i) => {
+    const target = code.parentElement?.tagName === 'PRE' ? code.parentElement : code;
+    target.id = `snippet-${i + 1}`;
+    if (location.hash === '#' + target.id) target.scrollIntoView();
+  });
   document.querySelectorAll<HTMLImageElement>('.prose img').forEach((img) => {
     img.loading = 'lazy';
     img.decoding = 'async';

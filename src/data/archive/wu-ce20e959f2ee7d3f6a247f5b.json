@@ -1,0 +1,46 @@
+{
+  "id": "wu-ce20e959f2ee7d3f6a247f5b",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:49.225Z",
+      "title": "pwn--格式化字符串泄露",
+      "contest": "未知",
+      "category": "unknown",
+      "difficulty": "未知",
+      "summary": "拖进ida分析",
+      "markdown": "# pwn--格式化字符串泄露\n\n拖进ida分析\n\n![image-20261008215427745](D:\\Typora\\图片\\image-20261008215427745.png)从图中可以看到input 的起始位置是 rsp+0x10，\n\n![image-20261008224618811](D:\\Typora\\图片\\image-20261008224618811.png)\n\nflag被拷在v2 数组的 v2[7] 到 v2[14] 中\n\n而v2的起始位置是rsp+0x118\n\n又QWORD（Quad Word，四字）：64 位，8 字节。（四倍的 WORD，也就是 x86_64 时代的“标准字长”）\n所以，_QWORD 这个名字，本身就是“4 乘以 2 字节 = 8 字节”的意思\n\n所以v2[7]的起始位置为rsp+0x118 + 7*8 = rsp+0x150\n\n两者的相对距离：0x150 - 0x10 = 0x140（320 字节）40个QWORD\n\n再泄露一下寻找input的参数起始地址\n\n![image-20261010164522157](D:\\Typora\\图片\\image-20261010164522157.png)\n\n由图可知input为第8个参数\n\n原因![image-20261010164950893](D:\\Typora\\图片\\image-20261010164950893.png)\n\n所以v2[7]的起始位置为%48$p\n\n故只需要泄露%48$p 到 %54$p 这 8 个参数，即可拿到Flag 字符串存放在栈上的 64 字节内存数据\n\n再通过清洗与转换（通过 split(b'.') 和 startswith(b'0x') 过滤）\n十六进制转整数（int(x, 16)）\n大端转小端（还原内存顺序）（p64(...)\n最后再用join拼接\n\n![image-20261011103802535](D:\\Typora\\图片\\image-20261011103802535.png)\n\ndata = io.recvall(timeout=2)接收数据\n\n注：该攻击脚本有一部分为ai所写，该题暂时只掌握了大致思路\n\n所学知识：如何通过泄露来找变量的起始位置\n\n不足：脚本不会写，很多时候要依靠ai\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# pwn--rop+OOB\n\n先检查保护机制\n\n![image-20261010165930814](D:\\Typora\\图片\\image-20261010165930814.png)\n\n由图可以看到PIE没开，不用泄露地址\n\n再拖入IDA\n\n![image-20261010170613162](D:\\Typora\\图片\\image-20261010170613162.png)\n\n\n\n发现一个可疑的edit函数\n\n![](D:\\Typora\\图片\\image-20261010173912412.png)\n\n分析c代码：![image-20261010172358050](D:\\Typora\\图片\\image-20261010172358050.png)\n\ndecimal：十进制\n\n要先输入一个十进制数否则会break\n输入1则会调用edit函数\n\n然后v2这个数组的地址被传入edit函数并被称为a1（rbp-0x40）\n\nv4同v1\n\nv3则是要输入一个16进制\n\n最后来到最为重要的一步![image-20261010174006781](D:\\Typora\\图片\\image-20261010174006781.png)\n(_QWORD *)(a1 + 8 * v4)：一个指向 8 字节内存空间的地址（v2的地址+8*v4的值)\n\n而v3就是这个地址内存放的值\n\n而我们要把 v3 的值写到返回地址这个位置去\n\n接着算偏移:0x40+8+=72   72/8=9\n\n故v4=9\n\n接着再构造rop链\n构造规则![image-20261011104104337](D:\\Typora\\图片\\image-20261011104104337.png)\n\n再寻找各个地址\n\n![image-20261011104133860](D:\\Typora\\图片\\image-20261011104133860.png)\n\n再找syscall的地址![image-20261011104159765](D:\\Typora\\图片\\image-20261011104159765.png)\n\n由图知为0x40145b\n\n还要bin/sh的地址![image-20261011104222883](D:\\Typora\\图片\\image-20261011104222883.png)\n\n最后就可以构造我们的rop链了\n\n最后再让ai帮我们写一下for循环（不会写....)\n\n![image-20261011104320745](D:\\Typora\\图片\\image-20261011104320745.png)\n\n关于最后的for循环的解析：![image-20261011104343548](D:\\Typora\\图片\\image-20261011104343548.png)\n\n\n\n![image-20261011104357256](D:\\Typora\\图片\\image-20261011104357256.png)\n\n\n\n![image-20261011104415775](D:\\Typora\\图片\\image-20261011104415775.png)\n\n所学知识：1.rop链的构造\n\n​                   2.ropgadget的使用\n\n​                   3.c代码的部分分析\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# pwn--rop+ret2text\n\n先检查保护机制\n\n![image-20261011103049177](D:\\Typora\\图片\\image-20261011103049177.png)\n\n再拖进IDA\n\n![image-20261011103200820](D:\\Typora\\图片\\image-20261011103200820.png)\n\n由最后一行可知发生了溢出\n再算偏移量![image-20261011103320284](D:\\Typora\\图片\\image-20261011103320284.png)\n\n偏移量为88（疑惑：恰好为0x58，没有加rbp本身的8字节）\n\n读取112字节，有24字节溢出，而且经过ROPgadget搜索找不到binsh字符串和system函数\n\n故我们要写入binsh字符串找到可写的.bss部分\n![image-20261011223232979](D:\\Typora\\图片\\image-20261011223232979.png)\n\n有个（name盘子）盲猜要用这个\n\n经锤子后得知用2段读即构建2段payload\n\n我们的目的：将bin/sh写入这个.bss段\n\n​                       调用system函数执行这个命令\n\n字节数一直超出限制，已卡在构造rop链好几个小时了\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+      "concepts": [],
+      "tools": [],
+      "source": {
+        "id": "src-ce20e959f2ee7d3f6a247f5b96a6a8513c0dd6cd8705c82cfd852b32c48f5b3b",
+        "filename": "pwn--格式化字符串泄露.md",
+        "format": "md",
+        "sha256": "ce20e959f2ee7d3f6a247f5b96a6a8513c0dd6cd8705c82cfd852b32c48f5b3b",
+        "uploadedAt": "2026-11-18T11:38:49.225Z",
+        "bodyStart": 1,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "pwn--格式化字符串泄露",
+            "start": 1,
+            "end": 62,
+            "excerpt": "拖进ida分析"
+          },
+          {
+            "title": "pwn--rop+OOB",
+            "start": 63,
+            "end": 157,
+            "excerpt": "先检查保护机制"
+          },
+          {
+            "title": "pwn--rop+ret2text",
+            "start": 158,
+            "end": 206,
+            "excerpt": "先检查保护机制"
+          }
+        ]
+      }
+    }
+  ]
+}

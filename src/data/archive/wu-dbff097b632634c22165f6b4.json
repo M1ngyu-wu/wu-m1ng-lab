@@ -1,0 +1,57 @@
+{
+  "id": "wu-dbff097b632634c22165f6b4",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:49.209Z",
+      "title": "pwn--tiny--XOR解码",
+      "contest": "未知",
+      "category": "linux",
+      "difficulty": "未知",
+      "summary": "根据提示要跟着gdb跑一遍",
+      "markdown": "# pwn--tiny--XOR解码\n\n![image-20261023205913080](D:\\Typora\\图片\\image-20261023205913080.png)\n\n根据提示要跟着gdb跑一遍\n\n先检查保护机制\n\n![image-20261023210024670](D:\\Typora\\图片\\image-20261023210024670.png)\n\n栈可执行且存在可读、可写、可执行的内存段\n\n拖进IDA![image-20261023210259007](D:\\Typora\\图片\\image-20261023210259007.png)\n\n可以知道没有什么信息\n\n在gdb中动态调试一下\n\n ![image-20261027230708895](D:\\Typora\\图片\\image-20261027230708895.png)\n\n发现\n\n![image-20261027200244137](D:\\Typora\\图片\\image-20261027200244137.png)\n\n得到了/bin/sh的地址\n\n且前面调用了syscall，查看一下前面的汇编\n\nimul edx, edx, 0x2：把代码段寄存器 CS 的值放入 EDX，再乘以 2。\n\nCS 通常为 0x33，故一共读取102字节\n\n\n![image-20261027232003748](D:\\Typora\\图片\\image-20261027232003748.png)\n\n总结：这段代码是在调用 read(0, R15+8, 102)\n\n所以我们要找R15 的真实值，以及这个缓冲区与返回地址之间的距离\n\n![image-20261027233322390](D:\\Typora\\图片\\image-20261027233322390.png)\n\n![image-20261027233751579](D:\\Typora\\图片\\image-20261027233751579.png)\n\n由图可以得到偏移量为0x30，即48、\n\n![image-20261028140946253](D:\\Typora\\图片\\image-20261028140946253.png)\n\n又发现又syscall，故可以通过调用syscall来得到shell\n\n![image-20261028000100088](D:\\Typora\\图片\\image-20261028000100088.png)\n\n![image-20261028002405856](D:\\Typora\\图片\\image-20261028002405856.png)\n\n找到设置rdi和rax的地址，构造一个syscall的rop链\n\n攻击脚本\n\n![image-20261027230805660](D:\\Typora\\图片\\image-20261027230805660.png)\n\n本题核心：xor解码\n\n用starti开始，再查看10条rip\n\ninc：+1\n\njne：Jump if Not Equal，条件不相等时跳转。\n• 它检查零标志 ZF。\n• 如果 ZF=0，就跳到 0x400134。\n• 如果 ZF=1，就继续执行后面的指令。\n\n![image-20261023210508858](D:\\Typora\\图片\\image-20261023210508858.png)\n\n跳转后查看指令\n\n![image-20261028135631377](D:\\Typora\\图片\\image-20261028135631377.png)\n\nmov    r9d,0x84：把0x84 放入 R9D，即处理132字节（这里的 R9D 是计数器，记录还剩多少字节需要处理）\n\nmov    cl,0x42：把 0x42 放入 CL，作为 XOR 密钥，每个字节都会与 0x42 做异或运算\n\nxor    BYTE PTR [r8],cl：修改内存的指令\n\ndec：-1（计数器减到零时，ZF 就会被设置为 1）\n\nxor解码的范围：起始地址：0x4000a1\n                             结束地址：0x400124\n\n查看结束前的汇编指令![image-20261028143311623](D:\\Typora\\图片\\image-20261028143311623.png)\n\n可用来构造rop链\n\n接着往下分析\n\n![image-20261028143416649](D:\\Typora\\图片\\image-20261028143416649.png)\n\n调用mprotect![image-20261028144201349](D:\\Typora\\图片\\image-20261028144201349.png)\n\n\n\n把 0x400000 开始的 4096 字节内存区域设置为可读、可执行，但不可写。\n\n\n\n\n\n\n\n# pwn--ret2libc--canary绕过\n\n阅读题目信息\n\n![image-20261028162457445](D:\\Typora\\图片\\image-20261028162457445.png)\n\n\n\n检查保护机制\n\n![image-20261028162554057](D:\\Typora\\图片\\image-20261028162554057.png)\n\n拖进IDA\n\n![image-20261028162705704](D:\\Typora\\图片\\image-20261028162705704.png)\n\n读取240个字节，存在溢出，且从题目的话来看要绕过canary\n\n再看一下汇编指令\n\n![image-20261028164654477](D:\\Typora\\图片\\image-20261028164654477.png)\n\nmov rax, fs:28h：读取 Canary\nmov [rbp+var_8], rax：将canary保存到 var_8\n\n栈空间的排列![image-20261028165227556](D:\\Typora\\图片\\image-20261028165227556.png)\n\n故从 buf 起始位置到返回地址的偏移是 0x68，即 104 字节。\n\njz 是 Jump if Zero，即“结果为零就跳转\n\n而我们要做的就是将jz改为jmp（无条件跳转）\n\n在IDA中看到jz那行命令的地址是0x120f\n\n又jmp的机器码是eb，故改完后是\n\n![image-20261028172017781](D:\\Typora\\图片\\image-20261028172017781.png)\n\n由于题目已经帮我们找好了libc基址，故只需要找偏移就行\n\n![image-20261028172527468](D:\\Typora\\图片\\image-20261028172527468.png)\n\n再编写payload\n\n错误示例\n\n![image-20261028172736152](D:\\Typora\\图片\\image-20261028172736152.png)\n\n由于本题与之前的不同，经锤子后得知需要让程序输出flag内容，不只是拿到/bin/sh\n\n最终payload![image-20261028172955900](D:\\Typora\\图片\\image-20261028172955900.png)\n\n\n\n# pwn--rop+ret2text\n\n依旧是上次卡了8h的题\n\n续接上次思路，上次将二段读理解成重新返回take_massage的地址，使其再次触发只能读取24字节的read\n\n经过CSDN和gpt的帮助，也是成功了解到是重新构造一个read，修改他的rdx，从而修改其读的字节数然后再构造rop链\n\n由于rsi一开始没变，还是rbp-0x58，故要覆盖前面所写的112个字节，，然后再写入我们构造的rop链\n\n填入我们之前已经找好的地址（ROPgadget --binary ./pwn --only \"pop|ret\"            objdump -d ./pwn |grep 'system@plt')\n\n\n\n攻击脚本![image-20261029213051594](D:\\Typora\\图片\\image-20261029213051594.png)\n\n\n\n\n\n\n\n",
+      "concepts": [
+        {
+          "id": "gdb",
+          "name": "GDB / pwndbg",
+          "category": "linux",
+          "aliases": [
+            "gdb"
+          ],
+          "line": 5,
+          "matched": "gdb"
+        }
+      ],
+      "tools": [],
+      "source": {
+        "id": "src-dbff097b632634c22165f6b4d7fea5846b24c31c29678e6c11ca071eadbff1ea",
+        "filename": "pwn--tiny.md",
+        "format": "md",
+        "sha256": "dbff097b632634c22165f6b4d7fea5846b24c31c29678e6c11ca071eadbff1ea",
+        "uploadedAt": "2026-11-18T11:38:49.209Z",
+        "bodyStart": 1,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "pwn--tiny--XOR解码",
+            "start": 1,
+            "end": 107,
+            "excerpt": "![image-20261023205913080](D:\\Typora\\图片\\image-20261023205913080.png)"
+          },
+          {
+            "title": "pwn--ret2libc--canary绕过",
+            "start": 108,
+            "end": 162,
+            "excerpt": "阅读题目信息"
+          },
+          {
+            "title": "pwn--rop+ret2text",
+            "start": 163,
+            "end": 185,
+            "excerpt": "依旧是上次卡了8h的题"
+          }
+        ]
+      }
+    }
+  ]
+}

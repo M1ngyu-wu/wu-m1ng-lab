@@ -1,0 +1,34 @@
+{
+  "id": "wu-1dbfb172c948e011eb1be601",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:49.292Z",
+      "title": "moe--syscall",
+      "contest": "未知",
+      "category": "unknown",
+      "difficulty": "未知",
+      "summary": "先查看保护机制",
+      "markdown": "# moe--syscall\n\n先查看保护机制\n\n\n\n![image-20261026002054156](D:\\Typora\\图片\\image-20261026002054156.png)\n\n拖进IDA\n\n![image-20261026002908756](D:\\Typora\\图片\\image-20261026002908756.png)\n\n由图知shellcode的长度最多为40字节\n\n而且申请了一个RWX段\n\n\n\n\n\n\n\n![image-20261026001842439](D:\\Typora\\图片\\image-20261026001842439.png)\n\n",
+      "concepts": [],
+      "tools": [],
+      "source": {
+        "id": "src-1dbfb172c948e011eb1be6011227ad763d4db98af77c0c4845e1c870fe72b317",
+        "filename": "moe--syscall.md",
+        "format": "md",
+        "sha256": "1dbfb172c948e011eb1be6011227ad763d4db98af77c0c4845e1c870fe72b317",
+        "uploadedAt": "2026-11-18T11:38:49.292Z",
+        "bodyStart": 1,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "moe--syscall",
+            "start": 1,
+            "end": 25,
+            "excerpt": "先查看保护机制"
+          }
+        ]
+      }
+    }
+  ]
+}

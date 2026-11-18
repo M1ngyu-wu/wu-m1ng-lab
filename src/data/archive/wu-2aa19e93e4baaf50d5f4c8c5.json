@@ -1,0 +1,51 @@
+{
+  "id": "wu-2aa19e93e4baaf50d5f4c8c5",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:49.196Z",
+      "title": "pwn--rop+ret2text",
+      "contest": "未知",
+      "category": "linux",
+      "difficulty": "未知",
+      "summary": "依旧是上周卡我7，8个小时的题目",
+      "markdown": "# pwn--rop+ret2text\n\n依旧是上周卡我7，8个小时的题目\n\n首先我们要调用read函数将/bin/sh写入.bss段，而且还只能写24字节\n\n错误示例：\n\n![image-20261019001118338](D:\\Typora\\图片\\image-20261019001118338.png)\n\n将/bin/sh写入.bss后不知道该如何控制返回地址\n\n导致无法回到take_massage再次读取\n\n出题人提示：试着动调一下，看看第一次read后寄存器的残留，想办法把rsi指向.bss，触发第二次read\n\n思考ing\n\n\n\n\n\n\n\n\n\n# pwn--shellcode\n\n检查保护机制\n\n![image-20261018223830317](D:\\Typora\\图片\\image-20261018223830317.png)\n\n与寻常的不一样，这题开了NX\n\n拖进IDA![image-20261019003156341](D:\\Typora\\图片\\image-20261019003156341.png)\n\n看clean_and_jump的汇编![image-20261019003349509](D:\\Typora\\图片\\image-20261019003349509.png)\n\n由图可以看到清零了众多寄存器，但r15保持不变\n\n而且程序从buf的第9个字节开始执行![image-20261019003917749](D:\\Typora\\图片\\image-20261019003917749.png)\n\nrsp=buf+8\n\n用gdb调试后发现![image-20261019004622730](D:\\Typora\\图片\\image-20261019004622730.png)\n\n![image-20261019004725590](D:\\Typora\\图片\\image-20261019004725590.png)\n\n故r15=buf\n\n先构造一段rop链，并用asm生成一段机器码\n\npush r15; pop rdi：利用程序保留下来的缓冲区地址，让 RDI 指向 /bin/sh\n\nal（rax的最低8位，一个字节）：利用 rax 已经为零的条件，把 RAX 设置为 59\n\n![image-20261019012707567](D:\\Typora\\图片\\image-20261019012707567.png)\n\n\n\n![image-20261019011623223](D:\\Typora\\图片\\image-20261019011623223.png)\n\n\n\n\n\n攻击脚本\n\n![image-20261019011931700](D:\\Typora\\图片\\image-20261019011931700.png)",
+      "concepts": [
+        {
+          "id": "gdb",
+          "name": "GDB / pwndbg",
+          "category": "linux",
+          "aliases": [
+            "gdb"
+          ],
+          "line": 45,
+          "matched": "gdb"
+        }
+      ],
+      "tools": [],
+      "source": {
+        "id": "src-2aa19e93e4baaf50d5f4c8c5ff50e1ddd19ebd8562a964b35e486d5a9398b269",
+        "filename": "pwn--rop+ret2text.md",
+        "format": "md",
+        "sha256": "2aa19e93e4baaf50d5f4c8c5ff50e1ddd19ebd8562a964b35e486d5a9398b269",
+        "uploadedAt": "2026-11-18T11:38:49.196Z",
+        "bodyStart": 1,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "pwn--rop+ret2text",
+            "start": 1,
+            "end": 26,
+            "excerpt": "依旧是上周卡我7，8个小时的题目"
+          },
+          {
+            "title": "pwn--shellcode",
+            "start": 27,
+            "end": 69,
+            "excerpt": "检查保护机制"
+          }
+        ]
+      }
+    }
+  ]
+}

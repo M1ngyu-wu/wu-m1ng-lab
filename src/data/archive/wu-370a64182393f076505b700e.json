@@ -1,0 +1,100 @@
+{
+  "id": "wu-370a64182393f076505b700e",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:49.268Z",
+      "title": "moe-pwn-第二题-走后门--ret2text",
+      "contest": "未知",
+      "category": "unknown",
+      "difficulty": "未知",
+      "summary": "​                   开了NX保护（借用程序已有代码）",
+      "markdown": "\n# moe-pwn-第二题-走后门--ret2text\n\n## 1.checksec查看文件的保护机制\n\n![image-20260923203255475](/image-20260923203255475.png)\n\n由图可知：无==canary==（不需要进行canary绕过）                   \n\n​                   开了NX保护（借用程序已有代码）\n\n​                    NO PIE：基址不变\n\n## 2.IDA找漏洞\n\n![image-20260923203827151](/image-20260923203827151.png)\n\n### 先找main函数，按f5反编译\n\n![image-20260923203956390](/image-20260923203956390.png)\n\n### 发现调用vuln函数（init为一些初始化工作）\n\n![image-20260923204315299](/image-20260923204315299.png)\n\n#### 解析：1.buf有64字节，rbp占8字节，故垃圾字节的长度为72，填满之后方可让目标地址覆盖返回地址\n\n#### 若有canary还要再加8字节\n\n              低地址（栈顶方向）\n\\----------------\n| buf[64]   | ← rbp - 0x40（占 64 字节）\n\\----------------\n| saved rbp  | ← rbp（占 8 字节，用来保存上一个函数的栈底）\n\\----------------\n| return addr | ← rbp + 8（占 8 字节，函数的返回地址）\n\\----------------\n高地址（栈底方向）\n\n####             2.  v1要大于0\n\n### 再找backdoor函数\n\n![image-20260923210431914](/image-20260923210431914.png)\n\n![image-20260923210448919](/image-20260923210448919.png)\n\n#### 解析：调用system函数----要栈对齐 （加ret）\n\n**ROPgadget --binary ./pwn | grep \": ret\"**寻找ret地址\n\n ![image-20260927111718945](/image-20260927111718945.png)\n\n故ret地址为0x40101a\n\n# 3.构造paylaod\n\npayload=b'a'*offset+(p64(ret_addr))+(p64(binsh_addr))\n（72个垃圾字节+栈对齐+返回地址）                       \n\n",
+      "concepts": [],
+      "tools": [],
+      "source": {
+        "id": "src-370a64182393f076505b700eb15c651ff3a579bc7dfc1f45cc31d20091b78760",
+        "filename": "moe-pwn-走后门.md",
+        "format": "md",
+        "sha256": "370a64182393f076505b700eb15c651ff3a579bc7dfc1f45cc31d20091b78760",
+        "uploadedAt": "2026-11-18T11:38:49.268Z",
+        "bodyStart": 4,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "正文",
+            "start": 4,
+            "end": 4,
+            "excerpt": "正文"
+          },
+          {
+            "title": "moe-pwn-第二题-走后门--ret2text",
+            "start": 5,
+            "end": 6,
+            "excerpt": "moe-pwn-第二题-走后门--ret2text"
+          },
+          {
+            "title": "1.checksec查看文件的保护机制",
+            "start": 7,
+            "end": 16,
+            "excerpt": "![image-20260923203255475](/image-20260923203255475.png)"
+          },
+          {
+            "title": "2.IDA找漏洞",
+            "start": 17,
+            "end": 20,
+            "excerpt": "![image-20260923203827151](/image-20260923203827151.png)"
+          },
+          {
+            "title": "先找main函数，按f5反编译",
+            "start": 21,
+            "end": 24,
+            "excerpt": "![image-20260923203956390](/image-20260923203956390.png)"
+          },
+          {
+            "title": "发现调用vuln函数（init为一些初始化工作）",
+            "start": 25,
+            "end": 28,
+            "excerpt": "![image-20260923204315299](/image-20260923204315299.png)"
+          },
+          {
+            "title": "解析：1.buf有64字节，rbp占8字节，故垃圾字节的长度为72，填满之后方可让目标地址覆盖返回地址",
+            "start": 29,
+            "end": 30,
+            "excerpt": "解析：1.buf有64字节，rbp占8字节，故垃圾字节的长度为72，填满之后方可让目标地址覆盖返回地址"
+          },
+          {
+            "title": "若有canary还要再加8字节",
+            "start": 31,
+            "end": 42,
+            "excerpt": "              低地址（栈顶方向）"
+          },
+          {
+            "title": "2.  v1要大于0",
+            "start": 43,
+            "end": 44,
+            "excerpt": "2.  v1要大于0"
+          },
+          {
+            "title": "再找backdoor函数",
+            "start": 45,
+            "end": 50,
+            "excerpt": "![image-20260923210431914](/image-20260923210431914.png)"
+          },
+          {
+            "title": "解析：调用system函数----要栈对齐 （加ret）",
+            "start": 51,
+            "end": 58,
+            "excerpt": "**ROPgadget --binary ./pwn | grep \": ret\"**寻找ret地址"
+          },
+          {
+            "title": "3.构造paylaod",
+            "start": 59,
+            "end": 64,
+            "excerpt": "payload=b'a'*offset+(p64(ret_addr))+(p64(binsh_addr))"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "id": "wu-59b3a7630b817d5cc346911f",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:49.303Z",
+      "title": "pwn7",
+      "contest": "未知",
+      "category": "unknown",
+      "difficulty": "未知",
+      "summary": "pwn7",
+      "markdown": "# pwn7\n\n\n\npwn7\n\n\n\n![image-20261005094135341](D:\\Typora\\图片\\image-20261005094135341.png)",
+      "concepts": [],
+      "tools": [],
+      "source": {
+        "id": "src-59b3a7630b817d5cc346911f395f6701ab1c20fcae02a6f26a7f080b980303ac",
+        "filename": "pwn7.md",
+        "format": "md",
+        "sha256": "59b3a7630b817d5cc346911f395f6701ab1c20fcae02a6f26a7f080b980303ac",
+        "uploadedAt": "2026-11-18T11:38:49.303Z",
+        "bodyStart": 1,
+        "generatedPrefix": 2,
+        "sections": [
+          {
+            "title": "正文",
+            "start": 1,
+            "end": 7,
+            "excerpt": "pwn7"
+          }
+        ]
+      }
+    }
+  ]
+}

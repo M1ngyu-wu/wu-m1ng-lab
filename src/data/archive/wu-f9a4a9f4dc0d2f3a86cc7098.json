@@ -1,0 +1,93 @@
+{
+  "id": "wu-f9a4a9f4dc0d2f3a86cc7098",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:37:29.377Z",
+      "title": "pwn1--整数溢出",
+      "contest": "未知",
+      "category": "linux",
+      "difficulty": "未知",
+      "summary": "将附件拖入IDA并找到main函数分析伪c代码",
+      "markdown": "# pwn1--整数溢出\n\n将附件拖入IDA并找到main函数分析伪c代码\n\n\n\n![image-20260929201100020](D:\\Typora\\图片\\image-20260929201100020.png)\n\n由图可以看到：level=2147483640且为int**型变量![image-20260929201638594](D:\\Typora\\图片\\image-20260929201638594.png)**\n\nint型变量最大值为2147483647\n\n而level+=gain![image-20260929201738633](D:\\Typora\\图片\\image-20260929201738633.png)\n\n要达到整数溢出效果gain要不小于8\n\n且gain<=100\n\n故输入8~100的数即可整数溢出使得level<0![image-20260929201942158](D:\\Typora\\图片\\image-20260929201942158.png)\n\n拿到shell\n\n\n\n# pwn2--c语言的常见函数与pwntools的基础使用\n\n拖进ida反编译\n\n![image-20260929202756702](D:\\Typora\\图片\\image-20260929202756702.png)\n\n## level1\n\n![image-20261002140027769](D:\\Typora\\图片\\image-20261002140027769.png)\n\n​                                                                   由图知读取长度为8个字节\n\n![image-20261002140333348](D:\\Typora\\图片\\image-20261002140333348.png)\n\n​                                                       由图知要使dest的前8个字节与good相等\n\n查看good（指针）储存的内容![image-20261002141110397](D:\\Typora\\图片\\image-20261002141110397.png)\n\n- **`dq`**：Define Quadword。在64位程序中，`dq` 代表定义 **8 个字节** 的数据。\n\n   \n\n![image-20261002140005887](D:\\Typora\\图片\\image-20261002140005887.png)\n\n​      send与sendline的区别：send(data)：发送纯数据 data，末尾不添加任何字符。\n\n​                                           sendline(data)：发送数据 data，末尾自动追加一个换行符 \\n\n\n​     若用sendline发送ILovePwn则会导致缓冲区残留一个\\n使得fgets读到换行符后直接停止，\n\n​      进而导致第二个strncmp不等于0直接die\n\n​      第二次发送时调用了fgets必须读到换行符否则就会一直等待故第二次发送可以直接用sendline\n​      也可以用send但要在末尾加个\\n\n\n## level2\n\n![image-20261002191259981](D:\\Typora\\图片\\image-20261002191259981.png)\n\n由图知要输入1131796且调用了scanf（要读到换行符才结束）\n\n故可直接用sendline或用send在末尾加一个\\n\n\n![image-20261002203055020](D:\\Typora\\图片\\image-20261002203055020.png)\n\n由于scanf与read是2个不同的缓冲区两个不同的缓冲区\n1. 用户空间缓冲区（stdio 缓冲区）：\n    ◦ 由 C 标准库（libc）维护。\n    ◦ scanf、gets、fgets、printf 等标准 I/O 函数使用的是这个缓冲区。\n    ◦ 它的目的是为了减少系统调用，提高效率（一次性从内核读一大块，比如 4096 字节）。\n\n2. 内核空间缓冲区（系统调用缓冲区 / socket 缓冲区）：\n    ◦ 由操作系统维护。\n    ◦ read、write、recv、send 等系统调用直接与这个缓冲区交互。\n\n  故可以不用考虑sendline残留的\\n，直接用send\n\n  同时getc（stdin）又把\\n给取走了，故后续状态这个缓冲区又变空了\n\n  ![image-20261002215308800](D:\\Typora\\图片\\image-20261002215308800.png)\n\n  再看这个图可知read读4个字节，直接发不行，要用p32满足其4个字节的要求\n\n  ## level3\n\n  ![image-20261002215732277](D:\\Typora\\图片\\image-20261002215732277.png)\n\n  调用fgets函数（读到\\n会停止，同时末尾自动补\\0）\n\n  由图知最多读8个字节（fgets末尾会自动补\\0）\n\n  故不能用sendline（结尾会补\\n使得缓冲区多出来一个\\n影响后面运行）\n\n  \n\n  ![image-20261002222344788](D:\\Typora\\图片\\image-20261002222344788.png)\n\n  每个元素的大小为1个字节，一共读10个元素故fread读10个字节\n\n  再用\\x00补齐字节数    好处：\n\n  - **不像 `\\n`（0x0a）**：`\\n` 会触发 `fgets` 截断，会在缓冲区里残留并污染后续的 `scanf` 或 `read`。`\\x00` 不会触发任何格式化解析。\n\n  - **不像可见字符（如 `a`、`1`）**：可见字符会被后续的 `strncmp`、`strlen` 视作有效数据，可能导致越界比较或长度计算错误。`\\x00` 是极其安静的“隐形人”。\n\n  - **不触发空白符跳过**：它也不会像空格那样被 `scanf` 跳过（`scanf` 跳过的是空白符，`\\x00` 不是空白符）。\n\n    ![image-20261002233603131](D:\\Typora\\图片\\image-20261002233603131.png)\n\n    最后再用sendline输入ILovePwn即可\n\n    攻击脚本为：\n\n<img src=\"D:\\Typora\\图片\\image-20261002233502028.png\" alt=\"image-20261002233502028\" style=\"zoom: 150%;\" />\n\n\n\n注：为什么用recvuntil(b'Input: ')会报错？--`printf(\"Input: \")` 没有换行\n\n总结（学到的知识点）：1.strncmp：遇到 `\\0` 会停止\n\n​                                             fgets：遇到 \\n、读满 n-1 个字符时停止，结尾自动补 \\0\n\n​                                                         如果发了 sendline，\\n 会被吞进 dest；如果长度刚好卡在 n-1，\\n 会残留在缓冲区，污染下一个函数\n\n​                                             fread：读满 size * nmemb 个字节停止（用\\x00补齐字节数）\n\n​                                             scanf：**会把 `\\n` 残留在缓冲区**\n\n​                                             strcpy：把 `src` 字符串复制到 `dest`，**遇到 `\\0` 停止复制**（且会把 `\\0` 一起复制过去）\n\n​                                              read：按固定字节数读取，完全不认 `\\n`，会把 `\\n` 当作普通数据读入，缓冲区与以上函数不同\n\n​                                          2.send与sendline的区别\n\n​                                          3.recvuntil的局限\n\n​                                          4.用\\x00补齐字节\n\n​                                          5.缓冲区\n\n\n\n# pwn3--ret2shellcode\n\n![image-20261003144413373](D:\\Typora\\图片\\image-20261003144413373.png)\n\n用file查看文件类型可知为64位架构\n\n\n\n\n\n依旧拖进IDA![image-20261003143449181](D:\\Typora\\图片\\image-20261003143449181.png)\n\n\n\n分析代码![image-20261003154417233](D:\\Typora\\图片\\image-20261003154417233.png)\n\n第三个参数 7。\n7 = 1 | 2 | 4，代表：\n• 1：可读\n• 2：可写\n• 4：可执行\n所以这块内存 既能写，又能执行。\nbuf 就是这块内存的地址\n\n\n\n![image-20261003155711445](D:\\Typora\\图片\\image-20261003155711445.png)\n\n(void (*)(void))buf 是一个强制类型转换：\n• 把 buf 这个“无类型指针”转换成“函数指针”。\n• 转换后，buf 的值（也就是那个内存地址）被当作一个函数的入口地址。\n而这个函数就是写入的那段 shellcode\n\n攻击脚本![image-20261003164304409](D:\\Typora\\图片\\image-20261003164304409.png)\n\n   1.shellcraft.sh() 生成汇编代码字符串；\n2. asm() 把这段汇编代码翻译成机器码字节；\n\n3. 最终 shellcode 就是一个 64 位 Linux 下执行 `/bin/sh` 的机器码：execve(\"/bin/sh\", NULL, NULL)\n\n4. arch='amd64'含义：指定目标 CPU 架构为 x86-64，也就是 64 位 架构。\n\n   \n\n   \n\n   反思：\n\n![image-20261003144749081](D:\\Typora\\图片\\image-20261003144749081.png)\n\nPIE与NX均开启为什么没什么作用？\n\n原因：1.这道题不需要知道任何代码地址；不需要 gadget；buf 是 mmap 返回的映射区地址，程序自己保存并调用；发送的 \n\n​                shellcod直接在那块内存里执行。所以，PIE 开启不影响利用。\n\n​            2.mmap 取出来的这块内存可读、可写、可执行，不受 NX 对栈的限制。\n\n拓展：\n\n prot 由三个位组成：\n\n值\t二进制\t含义\n1\t001\tPROT_READ（可读）\n2\t010\tPROT_WRITE（可写）\n4\t100\tPROT_EXEC（可执行）\n它们可以按位或组合：\n\n十进制\t二进制\t权限\n\n0\t000\t不可访问\n1\t001\t只读\n2\t010\t只写\n3\t011\t可读 + 可写\n4\t100\t只可执行\n5\t101\t可读 + 可执行\n6\t110\t可写 + 可执行\n7\t111\t可读 + 可写 + 可执行\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# pwn4--ret2text\n\n先用checksec检查保护机制\n\n![image-20261003203347886](D:\\Typora\\图片\\image-20261003203347886.png)\n\n再拖进IDA反编译\n\n![image-20261003203734492](D:\\Typora\\图片\\image-20261003203734492.png)\n\n同时看到函数列表有一个heavens_door函数，并根据左下角得到地址为0x401240\n\n​                                                    **![image-20261003204232333](D:\\Typora\\图片\\image-20261003204232333.png)**\n\n只要跳到这个函数我们就可以拿到shell了\n\n先算偏移量：由图可知v4距离rbp0x28，即40个字节\n\n又根据汇编中main函数的结尾![image-20261003213446419](D:\\Typora\\图片\\image-20261003213446419.png)\n\n\n\n不是leave，retn故偏移量直接就是40，不用加8\n\n也可以直接用gdb的cyclic算偏移量![image-20261004000437728](D:\\Typora\\图片\\image-20261004000437728.png)\n\n再找到ret地址解决栈对齐问题\n\n![image-20261004002201052](D:\\Typora\\图片\\image-20261004002201052.png)\n\n最后再用payload.ljust补齐100字节防止read卡死\n\n攻击脚本\n\n![image-20261004003554890](D:\\Typora\\图片\\image-20261004003554890.png)\n\n反思：为什么要栈对齐\n\n在 64 位 CPU 的指令集里，有一类特殊的指令叫 **SSE 指令**（比如 `movaps`）。\n这类指令在执行时，**强制要求内存地址必须是 16 的倍数**。\n如果 CPU 发现你要操作的地址不是 16 的倍数，它就会直接抛出异常（报 `SIGSEGV`），程序瞬间崩溃。\n\n而 `system` 函数是 libc 里的“大杂烩”，它内部为了实现高性能，大量使用了这类 SSE 指令。所以，**在调用 `system` 时，栈指针 `rsp` 必须刚好是 16 字节对齐的**。\n\n### 用溢出攻击时，发生了什么？\n\n通过栈溢出覆盖返回地址，然后用一条 `ret` 指令强行跳过去。**跳过了正常的 `call` 指令**此时栈上**少了一个返回地址**\n\n1. **跳过去时**：`ret` 指令弹出了填写的目标地址，`rsp` 增加了 8 字节。\n\n2. **进入目标函数（比如 `heavens_door`）时**：此时 `rsp` 的地址是 `16n - 8`（**不对齐**）。\n\n   # pwn5--格式化字符串\n\n\n\n![image-20261003171532139](D:\\Typora\\图片\\image-20261003171532139.png)\n\n根据题目提示用%lx取数并打印\n\n![image-20261003171711062](D:\\Typora\\图片\\image-20261003171711062.png)\n\n由图可知我们要取第七个数，故为%7$lx\n\n再看第二关![image-20261003172925674](D:\\Typora\\图片\\image-20261003172925674.png)\n\n均补0到12位，故为![image-20261003173053199](D:\\Typora\\图片\\image-20261003173053199.png)\n\n再看第三关![image-20261003173128107](D:\\Typora\\图片\\image-20261003173128107.png)\n\n再取一次![image-20261003174407514](D:\\Typora\\图片\\image-20261003174407514.png)\n\n根据表格输入指令![image-20261003174516973](D:\\Typora\\图片\\image-20261003174516973.png)\n\n注意![image-20261003174546327](D:\\Typora\\图片\\image-20261003174546327.png)\n\n真正存放的值是 0x2a故要补0到8字节\n\n核心![image-20261003174746926](D:\\Typora\\图片\\image-20261003174746926.png)\n\n拓展\n\n| 写法       | 含义                           |\n| :--------- | :----------------------------- |\n| `%N$lx`    | 十六进制，不补零               |\n| `%N$08lx`  | 十六进制，补零到 8 位          |\n| `%N$012lx` | 十六进制，补零到 12 位         |\n| `%N$p`     | 指针格式（带 0x）              |\n| `%N$d`     | 十进制                         |\n| `%N$s`     | 字符串（把参数当指针）         |\n| `%N$n`     | 写入（把已打印字符数写入该地址 |\n\n\n\n\n\n\n\n",
+      "concepts": [
+        {
+          "id": "gdb",
+          "name": "GDB / pwndbg",
+          "category": "linux",
+          "aliases": [
+            "gdb"
+          ],
+          "line": 268,
+          "matched": "gdb"
+        }
+      ],
+      "tools": [],
+      "source": {
+        "id": "src-f9a4a9f4dc0d2f3a86cc7098c4cd0cd7c8c7b08955fbc4edb7b79ab3fab76281",
+        "filename": "w1.md",
+        "format": "md",
+        "sha256": "f9a4a9f4dc0d2f3a86cc7098c4cd0cd7c8c7b08955fbc4edb7b79ab3fab76281",
+        "uploadedAt": "2026-11-18T11:37:29.377Z",
+        "bodyStart": 1,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "pwn1--整数溢出",
+            "start": 1,
+            "end": 24,
+            "excerpt": "将附件拖入IDA并找到main函数分析伪c代码"
+          },
+          {
+            "title": "pwn2--c语言的常见函数与pwntools的基础使用",
+            "start": 25,
+            "end": 30,
+            "excerpt": "拖进ida反编译"
+          },
+          {
+            "title": "level1",
+            "start": 31,
+            "end": 59,
+            "excerpt": "![image-20261002140027769](D:\\Typora\\图片\\image-20261002140027769.png)"
+          },
+          {
+            "title": "level2",
+            "start": 60,
+            "end": 87,
+            "excerpt": "![image-20261002191259981](D:\\Typora\\图片\\image-20261002191259981.png)"
+          },
+          {
+            "title": "level3",
+            "start": 88,
+            "end": 147,
+            "excerpt": "  ![image-20261002215732277](D:\\Typora\\图片\\image-20261002215732277.png)"
+          },
+          {
+            "title": "pwn3--ret2shellcode",
+            "start": 148,
+            "end": 243,
+            "excerpt": "![image-20261003144413373](D:\\Typora\\图片\\image-20261003144413373.png)"
+          },
+          {
+            "title": "pwn4--ret2text",
+            "start": 244,
+            "end": 287,
+            "excerpt": "先用checksec检查保护机制"
+          },
+          {
+            "title": "用溢出攻击时，发生了什么？",
+            "start": 288,
+            "end": 295,
+            "excerpt": "通过栈溢出覆盖返回地址，然后用一条 `ret` 指令强行跳过去。**跳过了正常的 `call` 指令**此时栈上**少了一个返回地址**"
+          },
+          {
+            "title": "pwn5--格式化字符串",
+            "start": 296,
+            "end": 342,
+            "excerpt": "![image-20261003171532139](D:\\Typora\\图片\\image-20261003171532139.png)"
+          }
+        ]
+      }
+    }
+  ]
+}

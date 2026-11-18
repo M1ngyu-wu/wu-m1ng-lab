@@ -1,0 +1,57 @@
+{
+  "id": "wu-850260fd65c4f2d0ecb21a9b",
+  "versions": [
+    {
+      "version": 1,
+      "createdAt": "2026-11-18T11:38:27.707Z",
+      "title": "pwn--rop+ret2text",
+      "contest": "未知",
+      "category": "linux",
+      "difficulty": "未知",
+      "summary": "依旧是上周卡我7，8个小时的题目",
+      "markdown": "# pwn--rop+ret2text\n\n依旧是上周卡我7，8个小时的题目\n\n首先我们要调用read函数将/bin/sh写入.bss段，而且还只能写24字节\n\n错误示例：\n\n![image-20261019001118338](D:\\Typora\\图片\\image-20261019001118338.png)\n\n将/bin/sh写入.bss后不知道该如何控制返回地址\n\n导致无法回到take_massage再次读取\n\n出题人提示：试着动调一下，看看第一次read后寄存器的残留，想办法把rsi指向.bss，触发第二次read\n\n思考ing\n\n\n\n\n\n\n\n\n\n# pwn--shellcode\n\n检查保护机制\n\n![image-20261018223830317](D:\\Typora\\图片\\image-20261018223830317.png)\n\n与寻常的不一样，这题开了NX\n\n拖进IDA![image-20261019003156341](D:\\Typora\\图片\\image-20261019003156341.png)\n\n看clean_and_jump的汇编![image-20261019003349509](D:\\Typora\\图片\\image-20261019003349509.png)\n\n由图可以看到清零了众多寄存器，但r15保持不变\n\n而且程序从buf的第9个字节开始执行![image-20261019003917749](D:\\Typora\\图片\\image-20261019003917749.png)\n\nrsp=buf+8\n\n![image-20261020164755278](D:\\Typora\\图片\\image-20261020164755278.png)\n\n由函数的传参规则，第一个指针或参数传入rdi\n\n故rdi内储存着buf的地址\n\n![image-20261020165010373](D:\\Typora\\图片\\image-20261020165010373.png)\n\n经过这一系列操作最终传入r15\n\n（另：用gdb调试后发现![image-20261019004622730](D:\\Typora\\图片\\image-20261019004622730.png)\n\n![image-20261019004725590](D:\\Typora\\图片\\image-20261019004725590.png))\n\n故r15=buf\n\n由于从第9字节写入，故要将机器码放在后面，前面写入/bin/sh\n\n且机器码长度为7字节\n\n先构造一段shellcode，并用asm生成一段机器码\n\npush r15; pop rdi：利用程序保留下来的缓冲区地址，让 RDI 指向 /bin/sh\n\nal（rax的最低8位，2个字节）：利用 rax 已经为零的条件，把 rax设置为 59\n\n![image-20261019012707567](D:\\Typora\\图片\\image-20261019012707567.png)\n\n\n\n![image-20261019011623223](D:\\Typora\\图片\\image-20261019011623223.png)\n\n\n\n\n\n攻击脚本\n\n![image-20261019011931700](D:\\Typora\\图片\\image-20261019011931700.png)\n\n反思（为什么不用shellcraft.sh() 生成）：\n\n这道题的限制是 15 字节，而 shellcraft.sh() 生成的标准 Shellcode 长度为 48 字节，明显超过限制。\n\n\n\n\n\n# pwn--ret2libc--moe\n\n检查保护机制\n\n![image-20261020194434826](D:\\Typora\\图片\\image-20261020194434826.png)\n\n拖入IDA![image-20261020200402951](D:\\Typora\\图片\\image-20261020200402951.png)\n\n由图知输入puts可以拿到puts的地址，而我们的目标是拿到libc的基址\n\nlibc基址=函数实际地址−函数偏移\n\n![image-20261020200827370](D:\\Typora\\图片\\image-20261020200827370.png)\n\n再找函数偏移![image-20261020204127657](D:\\Typora\\图片\\image-20261020204127657.png)\n\n经过计算得到libc基址：0x7f178f83a420 - 0x84420=0x7f178f7b6000\n\n再找system与/bin/sh的偏移\n\n![image-20261020205852165](D:\\Typora\\图片\\image-20261020205852165.png)\n\n然后算出实际地址\n\n再构造rop链\n\n![image-20261020212344311](D:\\Typora\\图片\\image-20261020212344311.png)\n\n攻击脚本的错误示例![image-20261020222303319](D:\\Typora\\图片\\image-20261020222303319.png)\n\n原因：将libc基址写死了，但每次远程交互时都不一样，导致每次的system和/bin/sh地址都不一样\n\n最终脚本（还是不太会写）\n\n![image-20261020224230034](D:\\Typora\\图片\\image-20261020224230034.png)\n\n\n\n\n\n\n\n",
+      "concepts": [
+        {
+          "id": "gdb",
+          "name": "GDB / pwndbg",
+          "category": "linux",
+          "aliases": [
+            "gdb"
+          ],
+          "line": 55,
+          "matched": "gdb"
+        }
+      ],
+      "tools": [],
+      "source": {
+        "id": "src-850260fd65c4f2d0ecb21a9bccd20b44870fbcfebf2cf6faf0016f2693eb2260",
+        "filename": "w3-926127970144-吴明宇-spark.md",
+        "format": "md",
+        "sha256": "850260fd65c4f2d0ecb21a9bccd20b44870fbcfebf2cf6faf0016f2693eb2260",
+        "uploadedAt": "2026-11-18T11:38:27.707Z",
+        "bodyStart": 1,
+        "generatedPrefix": 0,
+        "sections": [
+          {
+            "title": "pwn--rop+ret2text",
+            "start": 1,
+            "end": 26,
+            "excerpt": "依旧是上周卡我7，8个小时的题目"
+          },
+          {
+            "title": "pwn--shellcode",
+            "start": 27,
+            "end": 92,
+            "excerpt": "检查保护机制"
+          },
+          {
+            "title": "pwn--ret2libc--moe",
+            "start": 93,
+            "end": 135,
+            "excerpt": "检查保护机制"
+          }
+        ]
+      }
+    }
+  ]
+}

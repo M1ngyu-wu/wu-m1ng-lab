@@ -23,6 +23,8 @@ const initial = articles
     <p>在系统笔记、防御分析和导入的常规技术文档中查找原文，跳转到匹配片段。</p>
   </header>
   <section class="page-width content-section">
-    <CodeSearch initial={initial} client:load />
+    <CodeSearch initial={initial} client:only="react">
+      <p slot="fallback" role="status">正在载入代码索引…</p>
+    </CodeSearch>
   </section>
 </Layout>

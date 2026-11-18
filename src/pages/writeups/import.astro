@@ -11,6 +11,8 @@ import '../../styles/notebook.css';
     <p>文件在当前浏览器中解析。导入后即可阅读、搜索和查看来源。</p>
   </header>
   <div class="page-width content-section">
-    <ArchiveImport client:load />
+    <ArchiveImport client:only="react">
+      <p slot="fallback" role="status">正在载入本地导入工具…</p>
+    </ArchiveImport>
   </div>
 </Layout>
